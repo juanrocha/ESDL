@@ -13,7 +13,7 @@ fontsize: 11pt
 #font: Arial
 citecolor: blue
 documentclass: article
-bliography: ESDL_report.bib
+bibliography: ESDL_report.bib
 csl: nature.csl
 
 
@@ -32,7 +32,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Introduction
-Ecosystems world wide are increasingly at risk of critical transitions or regime shifts [@Steffen:2018ku; @Rockstrom:2009vx; @Rocha:2018gn; @Bolt:2018ib]. Regime shifts are large, abrupt and persistent changes in the function and structure of ecosystems [@Scheffer:2001uu; @Folke:2004bq]. Under current trends of climate forcing, green house gas emissions, pollution, and human appropriation of net primary productivity, ecosystems are increasingly expected to undergo more frequent and severe regime shifts. The problem is identifying where ecosystems are most at risk and whether early detection allow enought time for prevention or active recovery.
+Ecosystems world wide are increasingly at risk of critical transitions or regime shifts [@Steffen:2018ku; @Rockstrom:2009p4681; @Rocha:2018gn; @Bolt:2018ib]. Regime shifts are large, abrupt and persistent changes in the function and structure of ecosystems [@Scheffer:2001uu; @Folke:2004p2967]. Under current trends of climate forcing, green house gas emissions, pollution, and human appropriation of net primary productivity, ecosystems are increasingly expected to undergo more frequent and severe regime shifts. The problem is identifying where ecosystems are most at risk and whether early detection allow enought time for prevention or active recovery.
 
 When a dynamic system is close to a threshold it leaves a statistical signature on its time series known as critical slowing down [@Strogatz:2014wo; @Scheffer:2012ct; @Scheffer:2009p4449]. It takes longer to recover after a small disturbance, which translates into increases in variance, autocorrelation, and skewness or flickering [@Scheffer:2009p4449; @Dakos:2015jt]. Critical slowing down is therefore an indicator of the resiliene. Resilience is the ability of a system to withstand disturbances without loosing its function, structure, and hence its identity [@Folke:2010vx; @Anonymous:2016fv]. To date, the simplest, multi-system, and transparent resilience metric is recovery time [@Holling:1973p6861; @Scheffer:2009wl]. How to combine different early warnings based on critical slowing down? Or is it possible to use critical slowing down indicators to create maps that identify the most vulnerable ecosystems? These are both open questions and key frontiers of research [@Dakos:2015jt].
 
@@ -64,4 +64,5 @@ Combining multiple streams of data for detecting early warnings is at the fronti
 This research would have not been possible without the ESDL early adopter program. I would like to thank the efforts made to collect and harmonize the different data streams as well as the software developed to access and use the data cube. I am also grateful for the support of the European Space Agency.
 
 ## References
+
 \bibliography{references}
