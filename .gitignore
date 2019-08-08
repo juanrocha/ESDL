@@ -4,3 +4,10 @@
 .Ruserdata
 *.RData
 *.Rproj
+*.pdf
+*.log
+*.csl
+Untitled/
+*.png
+*.bib
+.DS_Store
