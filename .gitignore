@@ -4,7 +4,6 @@
 .Ruserdata
 *.RData
 *.Rproj
-*.pdf
 *.log
 *.csl
 Untitled/
