@@ -6,7 +6,16 @@
 *.Rproj
 *.log
 *.csl
-Untitled/
 *.png
 *.bib
 .DS_Store
+.Rproj.user
+paper/
+figures/
+processed*
+*.RData
+*.pdf
+*.log
+*.nc
+.Rapp.history
+*.csv
