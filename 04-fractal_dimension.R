@@ -89,16 +89,28 @@ object.size(df_results) %>% format("Gb") # 125Mb
 
 ## save
 # setwd("/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/")
-# save(df_results, file = "200714_fd_std_gpp_results.RData")
+# save(df_fractaldim, file = "200714_fd_std_gpp_results.RData")
 
-test <- df_results %>%
+
+# J200714: Idea! add a first diff on the fractal dimension on the df_results (all time), and in the summary add a # of increases / decreases, similar to:
+tic()
+df_fractaldim <- df_results %>%
+    select(-fd_std_half) %>%
+    mutate(
+        first_diff = slide_dbl(fd_std_4year, diff, .size = 2),
+        increased = first_diff > 0
+    ) %>%
     group_by(lat, lon) %>%
     summarize(
+        increase = sum(increased, na.rm = TRUE),
+        decrease = sum(!increased, na.rm = TRUE),
+        drift = sum(first_diff, na.rm = TRUE),
         fd_min = min(fd_std_4year, na.rm = TRUE),
         fd_max = max(fd_std_4year, na.rm = TRUE),
         fd_mean = mean(fd_std_4year, na.rm = TRUE),
-        fd_diff = fd_max - fd_min
-    )
+        fd_diff = fd_max - fd_min)
+toc() # 16min
+
 
 test %>%
     select(-fd_diff) %>%
@@ -112,9 +124,11 @@ test %>%
     facet_wrap(~fractal_dim, ncol = 2) +
     theme_light()
 
-test %>% ggplot(aes(lon, lat)) +
-    geom_tile(aes(fill = fd_diff)) +
-    scale_fill_viridis_c() +
+test %>%
+    # mutate(ratio = increase / decrease) %>%
+    ggplot(aes(lon, lat)) +
+    geom_tile(aes(fill = drift)) +
+    scale_fill_viridis_c(direction = -1) +
     theme_light()
 
 test %>%
@@ -123,7 +137,6 @@ test %>%
         names_to = "fractal_dim",
         values_to = "value") %>%
     ggplot(aes(value)) +
-    geom_density(aes(fill = value)) +
-    scale_fill_viridis_c() +
+    geom_density(aes(fill = fractal_dim)) +
     facet_wrap(~fractal_dim, ncol = 2) +
     theme_light()
