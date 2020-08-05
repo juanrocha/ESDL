@@ -13,11 +13,11 @@ library(tsibble)
 library(fractaldim)
 
 
-setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/processed_gpp")
+setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/processed_chlor_a")
 files <- list.files()
 
 #load(files[2])
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_gpp.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_chlorA.RData')
 
 
 fractal <- function(x){ # x is the file name
@@ -63,8 +63,10 @@ toc() # 47 secs when there is no error.
 ## For real:
 tic()
 results <- files %>%
-    future_map(fractal_safe, .progress = TRUE)
-toc() # Took 8.3 hours in sequential
+    future_map(fractal, .progress = TRUE)
+toc() # Took 8.3 hours in sequential,
+# 4.3 hrs in parallel for ChlorA data. Using fractal_safe the job got interrupted at the end and results lost. I'm not sure if the problem is related to `future_map` or the `safely` option of `fractal`. The error I got is: The process has forked and you cannot use this CoreFoundation functionality safely. You MUST exec().
+# Break on __THE_PROCESS_HAS_FORKED_AND_YOU_CANNOT_USE_THIS_COREFOUNDATION_FUNCTIONALITY___YOU_MUST_EXEC__() to debug.
 
 object.size(results) %>% format("Gb") # 125Mb
 

@@ -111,7 +111,8 @@ results <- results %>%
 
 ## is there any observation where the number of diff was identify or where the test statistic is higher than the critical value of the kpss test?
 results %>% filter(ndiffs > 0 | unit_root > 0.739)
-## All time series passed the test.
+## All time series of GPP passed the test.
+## J200720: The only pixel that does not pass the unitroot test for ChlorA data is lon 113.x and lat -9.12x. It takes over 3min to repeat the analysis, that's why I don't save it.
 
 #### Not run ####
 

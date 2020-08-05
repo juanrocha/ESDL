@@ -8,14 +8,14 @@ library(furrr)
 library(tsibble)
 
 ## Load cleaned data:
-setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/processed_gpp")
+setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/processed_chlor_a")
 files <- list.files()
 
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_gpp.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_chlorA.RData')
 
 seggy <- function(x){
     dfr <- x %>%
-        filter(!is.na(ew_std_4year)) # get rid of missing values
+        filter(!is.na(ew_std_half)) # get rid of missing values
     fit <- lm(ew_std_half ~ week, data = dfr)
     # no predefined psi (break point)
     sfit <- segmented::segmented(fit, ~ week)
@@ -124,8 +124,8 @@ plan(multicore, workers = 10) # do it in parallel
 ## For real:
 tic()
 results <- files %>%
-    future_map(multi_seggy_safe)
-toc() # 6000.922 sec ~ 1.5 hrs.
+    future_map(multi_seggy_safe, .progress = TRUE)
+toc() # 6000.922 sec ~ 1.5 hrs/ 160min ChlorA /
 
 object.size(results) %>% format("Mb") # 125Mb
 
@@ -149,7 +149,7 @@ df_results <- results[[1]] %>%
 
 ## save
 setwd("/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/")
-save(df_results, file = "200703_std_gpp_results.RData")
+save(df_results, file = "200717_std_chlorA_results.RData")
 ## Some visualizations:
 ## create map
 world <- ggplot(
@@ -172,13 +172,15 @@ df_results %>%
 
 df_results %>%
     ggplot(aes(lon, lat)) +
-    geom_tile(aes(fill = slope2)) +
+    geom_tile(aes(fill = diff)) +
     scale_fill_viridis_c(begin = 0, end = 1, direction = 1, option = "D",  na.value = "grey50") +
     guides(fill = guide_colourbar(barwidth = 15, barheight = 0.5)) +
     theme_void() +
     theme(legend.position = "bottom")
 
-
+df_results %>%
+    ggplot(aes(log(p_value))) + geom_density() +
+    geom_vline(xintercept = log(0.01))
 
 
 
