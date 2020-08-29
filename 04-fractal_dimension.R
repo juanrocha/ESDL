@@ -13,43 +13,49 @@ library(tsibble)
 library(fractaldim)
 
 
-setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/processed_chlor_a")
+setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/results_ews_halfwindow_lai")
 files <- list.files()
 
 #load(files[2])
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_chlorA.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_LAI.RData')
 
 
 fractal <- function(x){ # x is the file name
-    load(x)             # load the file, all objects are called mat
-    ## make into a data frame
-    df <- as_tibble(mat) %>%
-        mutate(time = time) %>%
-        pivot_longer(1:1440, names_to = "lon", values_to = "gpp") %>%
-        filter(!is.na(gpp)) ## remove all time series where all values are NAs.
-        # remember the timeseries was clean and filled gaps in Julia, so NA are for pixels with no obs over time.
+    ## read csv
+    #tic()
+    df <- read_csv(
+        file = x,
+        col_types = cols(
+            time = col_datetime(),
+            lon = col_double(),
+            gpp = col_double(),
+            gpp_1d = col_double(),
+            ews_std = col_double(),
+            ews_ac1 = col_double(),
+            ews_kur = col_double(),
+            ews_skw = col_double()
+        )
+    )
+    #toc() # 0.8 secs
 
     #tic()
-    df_results <- df %>%       # transform the df into a list by longitud
+    df <- df %>%
         group_by(lon) %>%
         mutate(
-            fd_std_4year = slide_dbl(
-                gpp,
-                function(x) fd.estimate(x, window.size = 52*4, method = "madogram")$fd,  .size = 52*4),
-            fd_std_half = slide_dbl(
-                gpp,
+            ews_fd = slide_dbl(
+                gpp_1d,
                 function(x) fd.estimate(x, window.size = length(time)/2, method = "madogram")$fd,  .size = length(time)/2)
         )
     #toc() # will take 10.6 hrs. 53secs * 720 files / 60 / 60 on single threat for only one fd calculation.
+    ### 20 secs when calculating only one window size :)
 
-    ifelse(
-        dim(df)[1] == 0,
-        return(NA),
-        return(df_results)
-    )
+    write_csv(df,
+         path = paste("~/Documents/Projects/ESDL_earlyadopter/ESDL/results_tmp/", x, sep = ""))
+
+    rm(df) # trying to save memory
+    # return(df_results)
+
 }
-
-
 
 fractal_safe <- safely(fractal)
 
@@ -57,14 +63,19 @@ fractal_safe <- safely(fractal)
 plan(multicore, workers = 10) # do it in parallel
 #### Execute on a test:
 tic()
-test1 <- fractal(files[1])
-toc() # 47 secs when there is no error.
-# It should take: 48 sec * 720 files / 60 min / 60 hrs = 9.6hrs
+test1 <- fractal(files[1])  ## don't assign the result
+toc() # 47 secs when there is no error. 101 secs for a 120Mb file of ChlorA.
+# If you assign the results, it get's saved in RAM. Maybe a way to speed the process and avoid overloading the RAM is not assigning the result, just intersted on the side effects of the function (which includes saving it as csv). -- 9.33 hrs in sequential for LAI data.
+
+## recovery mode:
+# files2 <- list.files("~/Documents/Projects/ESDL_earlyadopter/ESDL/results_tmp")
+# is_ok <- files %in% files2
+
 ## For real:
 tic()
-results <- files %>%
-    future_map(fractal, .progress = TRUE)
-toc() # Took 8.3 hours in sequential,
+files %>%
+    future_map(fractal)
+toc() # New improvement 1.4hrs GPP data. Took 8.3 hours in sequential,
 # 4.3 hrs in parallel for ChlorA data. Using fractal_safe the job got interrupted at the end and results lost. I'm not sure if the problem is related to `future_map` or the `safely` option of `fractal`. The error I got is: The process has forked and you cannot use this CoreFoundation functionality safely. You MUST exec().
 # Break on __THE_PROCESS_HAS_FORKED_AND_YOU_CANNOT_USE_THIS_COREFOUNDATION_FUNCTIONALITY___YOU_MUST_EXEC__() to debug.
 
@@ -142,3 +153,36 @@ test %>%
     geom_density(aes(fill = fractal_dim)) +
     facet_wrap(~fractal_dim, ncol = 2) +
     theme_light()
+
+
+
+### deprecated function:
+#
+# fractal_scratch <- function(x){ # x is the file name
+#     load(x)             # load the file, all objects are called mat
+#     ## make into a data frame
+#     df <- as_tibble(mat) %>%
+#         mutate(time = time) %>%
+#         pivot_longer(1:1440, names_to = "lon", values_to = "gpp") %>%
+#         filter(!is.na(gpp)) ## remove all time series where all values are NAs.
+#         # remember the timeseries was clean and filled gaps in Julia, so NA are for pixels with no obs over time.
+#
+#     #tic()
+#     df_results <- df %>%       # transform the df into a list by longitud
+#         group_by(lon) %>%
+#         mutate(
+#             fd_std_4year = slide_dbl(
+#                 gpp,
+#                 function(x) fd.estimate(x, window.size = 52*4, method = "madogram")$fd,  .size = 52*4),
+#             fd_std_half = slide_dbl(
+#                 gpp,
+#                 function(x) fd.estimate(x, window.size = length(time)/2, method = "madogram")$fd,  .size = length(time)/2)
+#         )
+#     #toc() # will take 10.6 hrs. 53secs * 720 files / 60 / 60 on single threat for only one fd calculation.
+#
+#     ifelse(
+#         dim(df)[1] == 0,
+#         return(NA),
+#         return(df_results)
+#     )
+# }

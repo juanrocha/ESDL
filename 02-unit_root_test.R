@@ -47,7 +47,7 @@ files <- list.files()
 #load(files[2])
 load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_gpp.RData')
 
-
+##J200818: To do - update the test to work on the CSV files. Deprecate the current version
 
 unitroot <- function(x){ # x is the file name
     load(x)             # load the file, all objects are called mat

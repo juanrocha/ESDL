@@ -6,17 +6,20 @@ library(tictoc)
 library(future)
 library(furrr)
 library(tsibble)
+library(progress)
+library(fractaldim)
 
 ## Data folders are:
 # /processed_gpp
 # /processed_chlor_a
 # /processed_leaf_area_index
+# /processed_root_moisture | don't use this data, it's too measy, takes long time, does not return results.
 
-setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/processed_leaf_area_index")
+setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/processed_terrestrial_ecosystem_respiration")
 files <- list.files()
 
 #load(files[2])
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_LAI.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_terrestrial_ecosystem_respiration.RData')
 # key files are:
 # /keys_gpp.RData
 # /keys_chlorA.RData
@@ -34,18 +37,26 @@ early_warning <- function(x, window){
     #toc() # 0.2 secs
 
     if (dim(df)[1] > 0) {
-        # calculate first difference
-        #tic()
+        # filter out all zeroes ts:
+        # tic()
         df <- df %>%
             mutate(lon = as.numeric(lon)) %>%
             group_by(lon) %>%
+            mutate(non_zeroes = any(gpp != 0)) %>%
+            filter(non_zeroes == TRUE) %>%
+            select(-non_zeroes)
+        # toc() # 0.4secs
+
+        # calculate first difference
+        #tic()
+        df <- df %>%
             mutate(
                 gpp_1d = slide_dbl(gpp, diff, .size = 2)
             )
         #toc() # 1.776 sec
 
         # add one column per each early warning
-        #tic()
+        # tic()
         df <- df %>%
         mutate(
             ews_std = slide_dbl(
@@ -56,9 +67,12 @@ early_warning <- function(x, window){
             ews_kur = slide_dbl(
                 gpp_1d, moments::kurtosis, na.rm = TRUE, .size = window),
             ews_skw = slide_dbl(
-                gpp_1d, function(x) abs(moments::skewness(x, na.rm = TRUE)), .size = window)
-        )
-        #toc() ## 18 secs
+                gpp_1d, function(x) abs(moments::skewness(x, na.rm = TRUE)), .size = window),
+            ews_fd = slide_dbl(
+                gpp_1d, function(x) fd.estimate(x, window.size = window, method = "madogram")$fd,  .size = window)
+            # calculating fractal dimension here doubles the time but it's done.
+            )
+        # toc() ## 18 secs | 96 secs with fractal dim.
 
         ## write results to file
         #tic()
@@ -78,6 +92,8 @@ early_warning <- function(x, window){
                 min_kur = min(ews_kur, na.rm = TRUE),
                 max_skw = max(ews_skw, na.rm = TRUE),
                 min_skw = min(ews_skw, na.rm = TRUE),
+                max_fd = max(ews_fd, na.rm = TRUE),
+                min_fd = min(ews_fd, na.rm = TRUE)
             )
         #toc() # 0.32 sec
     }
@@ -88,16 +104,48 @@ early_warning <- function(x, window){
     )
 } # 19 secs in sequential
 
+## test
+tic()
+files[1] %>% early_warning(window)
+toc() # 103.148 sec
 # Window decides the window size: 52, 52*4, length(time)/2
-window <- length(time)/2
+window <- floor(length(time)/2)
+results <- list()
 # do it in parallel
-plan(multicore, workers = 10)
+plan(multisession, workers = 10)
 tic()
 results <- files %>%
     future_map(early_warning, window, .progress = TRUE)
 toc() # 60 mins terrestrial data, 2.15 hours marine
 
-## J200805: `early_warning` finished in the LAI data  but results were not stored, it ran out memory. I can recovered however from the files produced later, perhaps with sparklyr.
+## J200805: `early_warning` finished in the LAI data  but results were not stored, it ran out memory I believe. I can recovered however from the files produced later.
+files2 <- list.files(
+    path = "~/Documents/Projects/ESDL_earlyadopter/ESDL/results_tmp")
+
+files1 <- files %>% str_remove(".RData")
+files2 <- files2 %>% str_remove(".csv")
+
+is_ok <- files1 %in% files2 # these are the files missing from the first round.
+
+plan(sequential) # do it in normal mode.
+test <- list()
+tic()
+test <- files[!is_ok] %>%
+    map(early_warning, window)
+toc()
+
+## fix test and append to results
+not_ok <- is.na(test)
+lat_test <- files[!is_ok] %>%
+    str_remove("lat_") %>%
+    str_remove(".RData") %>%
+    as.numeric()
+
+test <- test[!not_ok] %>%
+    map2(., lat_test[!not_ok], function(x,y) x %>% add_column(lat = y))
+
+results <- c(results, test)
+#J200806: If it fails, you can ommit the summary part and still create the files. J200810: That's what I'm doing now in script `06-rescue.R`
 
 object.size(results) %>% format("Mb") # 3.9Gb in RAM, cannot do that on high res
 
@@ -115,7 +163,58 @@ toc() # 3.5 secs
 ## Note that the latitudes that do not have data were dropped, so only 543 slices of data are preserved, all with lon and lat coords.
 length(results) # 543
 
-# save(results, file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/200805_results_ews_halfwindow_chlorA.RData")
+# save(results, file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/200805_results_ews_halfwindow_LAI.RData")
+
+
+
+#
+# setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/results_tmp")
+# files2 <- list.files()
+# results <- list()
+# pb <- progress_bar$new(total = length(files))
+#
+# extract_summary <- function(x){
+#     df <- read_csv(x, col_types = cols(
+#         time = col_character(),
+#         lon = col_double(),
+#         gpp = col_double(),
+#         gpp_1d = col_double(),
+#         ews_std = col_double(),
+#         ews_ac1 = col_double(),
+#         ews_kur = col_double(),
+#         ews_skw = col_double()
+#     ))
+#
+#     df_results <- df %>%
+#         group_by(lon) %>%
+#         summarize(
+#             ## J200723: Add here some summary statistics of the original time series: variance and std of gpp (assumed to be 1)
+#             max_std = max(ews_std, na.rm = TRUE),
+#             min_std = min(ews_std, na.rm = TRUE),
+#             max_ac1 = max(ews_ac1, na.rm = TRUE),
+#             min_ac1 = min(ews_ac1, na.rm = TRUE),
+#             max_kur = max(ews_kur, na.rm = TRUE),
+#             min_kur = min(ews_kur, na.rm = TRUE),
+#             max_skw = max(ews_skw, na.rm = TRUE),
+#             min_skw = min(ews_skw, na.rm = TRUE),
+#         )
+#     pb$tick()
+#     return(df_results)
+# }
+#
+#
+# tic()
+# results <- files %>%
+#   map(extract_summary)
+# toc() ##
+#
+# # latitudes are wrong, recover them from file names
+# lat <- files %>% str_remove("lat_") %>% str_remove(".csv") %>% as.numeric()
+# ## Add corrected latitudes
+# tic()
+# results <- results %>%
+#     map2(., lat, function(x,y) x %>% add_column(lat = y))
+# toc() # 3.5 secs
 
 # visualize some diagnostics
 ## To-do: calculate the differences for all ews, panel map comparing ews + distributions. If all have long tails, one can just continue the analysis of segmented regressions on the tails. Plot the quantiles.
@@ -128,21 +227,41 @@ df <- results %>%
         diff_kur = max_kur - min_kur,
         diff_skw = max_skw - min_skw
     ) %>%
-    select(lon, lat, starts_with("diff")) %>%
-    pivot_longer(cols = 3:6,
+    select(lon, lat, everything()) %>% # starts_with("diff")
+    pivot_longer(cols = 3:last_col(),
         names_to = c(".value", "stat"),
         names_sep = "_"
-    )
+    ) %>%
+    pivot_longer(cols = c("max", "min", "diff"),
+        names_to = "feature", values_to = "value")
 
-df %>%  ggplot(aes(diff_std)) + geom_density()
-    #maps
 df %>% filter(stat == "skw") %>%
+    ggplot(aes(lon,lat)) +
+    geom_tile(aes(fill = value)) +
+    facet_grid(stat ~ feature)
+
+df %>% filter(stat == "ac1") %>%
+    ggplot(aes(diff)) +
+    geom_density() +
+    # geom_rug(aes(color = diff)) +
+    scale_color_viridis_c() +
+    facet_wrap(~stat, scales = "free") +
+    theme_light()
+    #maps
+df %>% filter(stat == "kur") %>%
+    #filter(lon > -95, lon < -60, lat > 0, lat < 35) %>%
     ggplot(aes(lon, lat)) +
     geom_tile(aes(fill = diff)) +
     scale_fill_viridis_c() +
     #facet_wrap(~stat) +
     theme_light()
 
+## this explains some of the annomalies:
+dat <- results %>% bind_rows()
+map(dat, function(x) sum(is.infinite(x)))
+dat %>% filter(is.infinite(max_ac1)) %>%
+    ggplot(aes(lon,lat)) + geom_tile(aes(fill = max_std))
+# I assume some areas of the world were just filled with zeroes, end up with zero std, and -Inf on the rest of statistics. Big chucks are Antartica, Greenland and Sahara, but around these points are also some of the stronger signals when mapping.
 
 #### Old code ####
 ## Previous attempts here archived
