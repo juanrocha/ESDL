@@ -19,3 +19,8 @@ processed*
 *.nc
 .Rapp.history
 *.csv
+*.tex
+*.bst
+*.clo
+*.cls
+*.sty
