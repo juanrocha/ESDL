@@ -2,9 +2,9 @@ library(tidyverse)
 library(tictoc)
 
 
-setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/ews_halfwindow_lai")
+setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/ews_halfwindow_terrestrial_ecosystem_respiration")
 
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_lai.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_terrestrial_ecosystem_respiration.RData')
 
 files <- list.files()
 
@@ -105,6 +105,6 @@ lobstr::obj_size(df)
 object.size(df) %>% format("Mb")
 
 ## Save results:
-save(df, file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/200826_summary_lai.RData")
+save(df, file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/200921_summary_terrestrial_ecosystem_respiration.RData")
 
 ## can you pre-select the relevant links where larger differences are present?

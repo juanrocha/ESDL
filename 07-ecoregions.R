@@ -38,8 +38,14 @@ key_terrestrial <- terr_eco %>%
   rename(biome = 1, biome_code = 2)
 
 df_biomes <- left_join(df_biomes, key_terrestrial)
+df_biomes <- df_biomes %>%
+  mutate(biome = as_factor(biome)) %>%
+  mutate(biome = fct_reorder(biome, biome_code))
 
 object.size(biomes) %>% format("Mb")
+
+## save
+save(df_biomes, file = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/Results/terrestrial_biomes.RData")
 
 ## Visualize:
 df_biomes %>% ggplot(aes(lon, lat)) +
@@ -48,6 +54,10 @@ df_biomes %>% ggplot(aes(lon, lat)) +
 
 ## Marine ecoregions:
 mar_eco <- st_read("~/Documents/Projects/DATA/MEOW/meow_ecos.shp")
+## keys for latitude and longitudes
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_chlorA.RData')
+
+r <- raster::raster(nrows = length(lat), ncol = length(lon), xmn = min(lon), xmx = max(lon), ymn = min(lat), ymx = max(lat))
 
 mar_realms <- fasterize::fasterize(mar_eco, r, field = "RLM_CODE")
 
@@ -74,6 +84,14 @@ key_marine <- mar_eco %>%
 
 df_marine <- left_join(df_marine, key_marine)
 
+df_marine <- df_marine %>%
+  mutate(biome = as_factor(realm)) %>%
+  mutate(biome = fct_reorder(biome, biome_code))
+
 df_biomes %>% ggplot(aes(lon, lat)) +
   geom_tile(aes(fill = biome)) +
   theme_void()
+
+
+## save
+save(df_marine, file = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/Results/marine_biomes.RData")
