@@ -17,10 +17,10 @@ library(tsibble)
 
 ### J200920: Not working with chlorA, ran out of memory in sequential or parallel. I probably need to save files on the fly and collect results later. It took almost 1.5hrs before memory crash (but R didn't crashed)
 
-key_var <- "chlorA"
+key_var <- "terrestrial_ecosystem_respiration_log"
 
 load(paste(
-    "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/200901_detected_", key_var, ".RData", sep = ""))
+    "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201024_detected_", key_var, ".RData", sep = ""))
 
 # load(
 #     paste("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/200918_summary_", key_var, ".RData", sep = ""))
@@ -212,7 +212,7 @@ results <- list()
 tic()
 results <- future_map2(files, as.numeric(lats), multi_seggy_safe)
 toc() # 18 min GPP, 46mins terrestiral respiration in parallel, 76mins ChlorA.
-
+# 45min lai-log
 object.size(results) %>% format("Mb") # 125Mb
 
 results <- transpose(results)
@@ -239,7 +239,7 @@ px_results <- results[[1]] %>%
     bind_rows()
 
 ## save
-save(px_results, file = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/Results/20921_segmented_chlorA.RData")
+save(px_results, file = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201028_segmented_terrestrial_ecosystem_respiration_log.RData")
 
 ## Some visualizations:
 ## create map
@@ -287,7 +287,7 @@ px_results %>%
     theme_light(base_size = 8) +
     theme(legend.position = "bottom")
 
-# quartz.save(file = "figures/figS4_slopes_diff_GPP.png", type = "png", 
+# quartz.save(file = "figures/figS4_slopes_diff_GPP.png", type = "png",
 #             width = 5, height = 3, dpi = 800)
 
 px_results %>%
@@ -304,7 +304,7 @@ px_results %>%
         csd = sum(csd, na.rm = TRUE),
         csu = sum(csu, na.rm = TRUE),
         ksk = sum(ksk, na.rm = TRUE),
-        ksk_amb = sum(ksk_amb, na.rm = TRUE), 
+        ksk_amb = sum(ksk_amb, na.rm = TRUE),
         amb = sum(amb, na.rm = TRUE))
 
 df_ews$n_ews %>% table()

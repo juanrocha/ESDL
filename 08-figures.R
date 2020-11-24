@@ -5,7 +5,7 @@ library(rworldmap)
 data("coastsCoarse")
 
 # load results:
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/200918_summary_chlorA.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201029_summary_terrestrial_ecosystem_respiration_log.RData')
 
 # dataset with biomes:
 load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/terrestrial_biomes.RData')
@@ -126,7 +126,7 @@ plot_maps <- pmap(
           title.position = "top", keywidth = 0.3, keyheight = 0.3, order = 1)) +
       theme_void(base_size = 6) + labs(tag = tags) +
       theme(
-        legend.position = "bottom", #c(0.7,0.1), 
+        legend.position = "bottom", #c(0.7,0.1),
         legend.direction = "horizontal",
         legend.box = "horizontal", legend.title.align = 0.5,
         legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt")
@@ -179,7 +179,7 @@ plot_maps[[6]] <-  df_ews %>%
       title.position = "top",barwidth = 3, barheight = 0.2)) +
   theme_void(base_size = 6) +
   theme(
-    legend.position = "bottom", #c(0.7,0.1), 
+    legend.position = "bottom", #c(0.7,0.1),
     legend.direction = "horizontal",
     legend.box = "horizontal", legend.title.align = 0.5,
     legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt")) #+
@@ -333,5 +333,5 @@ bottom <- wrap_plots(plot_maps) +
 bottom
 
 
-quartz.save(file = "figures/figS2_maps_chlorA.png", type = "png", 
+quartz.save(file = "figures/figS2_maps_chlorA.png", type = "png",
             width = 7.5, height = 7.5, dpi = 800)

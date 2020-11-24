@@ -6,6 +6,7 @@ library(tictoc)
 library(future)
 library(furrr)
 library(tsibble)
+library(slider)
 library(progress)
 library(fractaldim)
 
@@ -15,11 +16,11 @@ library(fractaldim)
 # /processed_leaf_area_index
 # /processed_root_moisture | don't use this data, it's too measy, takes long time, does not return results.
 
-setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/processed_terrestrial_ecosystem_respiration")
+setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/processed_terrestrial_ecosystem_respiration_log")
 files <- list.files()
 
 #load(files[2])
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_terrestrial_ecosystem_respiration.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_terrestrial_ecosystem_respiration_log.RData')
 # key files are:
 # /keys_gpp.RData
 # /keys_chlorA.RData
@@ -51,33 +52,37 @@ early_warning <- function(x, window){
         #tic()
         df <- df %>%
             mutate(
-                gpp_1d = slide_dbl(gpp, diff, .size = 2)
+                gpp_1d = slide_dbl(
+                    gpp, diff, .before = 1, .after = 0, .complete = TRUE)
             )
         #toc() # 1.776 sec
 
         # add one column per each early warning
-        # tic()
+        tic()
         df <- df %>%
         mutate(
             ews_std = slide_dbl(
-                gpp_1d, sd, na.rm = TRUE, .size = window),
+                gpp_1d, sd, na.rm = TRUE, .before = window, .after = 0, .complete = TRUE),
             ews_ac1 = slide_dbl(
                 gpp_1d,
-                function(x) cor(x,lag(x,1), use = "pairwise.complete.obs", "pearson"),  .size = window),
+                function(x) cor(x,lag(x,1), use = "pairwise.complete.obs", "pearson"),.before = window, .after = 0, .complete = TRUE),
             ews_kur = slide_dbl(
-                gpp_1d, moments::kurtosis, na.rm = TRUE, .size = window),
+                gpp_1d, moments::kurtosis, na.rm = TRUE, .before = window, .after = 0, .complete = TRUE),
             ews_skw = slide_dbl(
-                gpp_1d, function(x) abs(moments::skewness(x, na.rm = TRUE)), .size = window),
-            ews_fd = slide_dbl(
-                gpp_1d, function(x) fd.estimate(x, window.size = window, method = "madogram")$fd,  .size = window)
+                gpp_1d, function(x) abs(moments::skewness(x, na.rm = TRUE)), .before = window, .after = 0, .complete = TRUE) ,
             # calculating fractal dimension here doubles the time but it's done.
+            ews_fd = slide_dbl(
+                gpp_1d,
+                function(x) {
+                    z <- fd.estimate(x, window.size = window, method = "madogram")$fd
+                    return(as.vector(z))} , .before = window, .after = 0, .complete = TRUE)
             )
-        # toc() ## 18 secs | 96 secs with fractal dim.
+        toc() ## 18 secs | 96 secs with fractal dim.
 
         ## write results to file
         #tic()
         write_csv(df,
-             path = paste("~/Documents/Projects/ESDL_earlyadopter/ESDL/results_tmp/", str_replace(x, "RData", "csv"), sep = ""))
+             file = paste("~/Documents/Projects/ESDL_earlyadopter/ESDL/results_tmp/", str_replace(x, "RData", "csv"), sep = ""))
         #toc()
         ## summarize the result in timeless statistics:
         #tic()
@@ -104,19 +109,21 @@ early_warning <- function(x, window){
     )
 } # 19 secs in sequential
 
+# Window decides the window size: 52, 52*4, length(time)/2
+window <- floor(length(time)/2)
+
 ## test
 tic()
 files[1] %>% early_warning(window)
 toc() # 103.148 sec
-# Window decides the window size: 52, 52*4, length(time)/2
-window <- floor(length(time)/2)
+
 results <- list()
 # do it in parallel
 plan(multisession, workers = 10)
 tic()
 results <- files %>%
     future_map(early_warning, window, .progress = TRUE)
-toc() # 60 mins terrestrial data, 2.15 hours marine
+toc() # 60 mins terrestrial data, 2.15 hours marine, 2.5hrs with log-gpp, 4.8hr log-chlorA, 3.7hrs; 2.3hrs TER
 
 ## J200805: `early_warning` finished in the LAI data  but results were not stored, it ran out memory I believe. I can recovered however from the files produced later.
 files2 <- list.files(
@@ -147,7 +154,8 @@ test <- test[!not_ok] %>%
 results <- c(results, test)
 #J200806: If it fails, you can ommit the summary part and still create the files. J200810: That's what I'm doing now in script `06-rescue.R`
 
-object.size(results) %>% format("Mb") # 3.9Gb in RAM, cannot do that on high res
+object.size(results) %>% format("Mb")
+# 3.9Gb in RAM, cannot do that on high res
 
 # Not alll results are ok, some are null values, identify them:
 not_ok <- is.na(results)
@@ -163,7 +171,7 @@ toc() # 3.5 secs
 ## Note that the latitudes that do not have data were dropped, so only 543 slices of data are preserved, all with lon and lat coords.
 length(results) # 543
 
-# save(results, file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/200805_results_ews_halfwindow_LAI.RData")
+# save(results, file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/201029_results_ews_halfwindow_terrestrial_ecosystem_respiration-log.RData")
 
 
 

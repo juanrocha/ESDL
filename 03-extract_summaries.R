@@ -2,9 +2,9 @@ library(tidyverse)
 library(tictoc)
 
 
-setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/ews_halfwindow_terrestrial_ecosystem_respiration")
+setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/ews_halfwindow_terrestrial_ecosystem_respiration_log")
 
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_terrestrial_ecosystem_respiration.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_terrestrial_ecosystem_respiration_log.RData')
 
 files <- list.files()
 
@@ -68,10 +68,11 @@ toc()
 # all:
 diffs <- list()
 
+## I think this is the same as df_results from 01 script.
 tic()
 diffs <- files %>%
     map(., summary_all)
-toc() # 20mins in sequential, 33 min LAI
+toc() # 20mins in sequential, 33 min LAI, 13min gpp-log, 42min chlorA-log, 25min lai-log
 
 # latitudes are wrong, recover them from file names
 lat <- files %>% str_remove("lat_") %>% str_remove(".csv") %>% as.numeric()
@@ -105,6 +106,6 @@ lobstr::obj_size(df)
 object.size(df) %>% format("Mb")
 
 ## Save results:
-save(df, file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/200921_summary_terrestrial_ecosystem_respiration.RData")
+save(df, file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201029_summary_terrestrial_ecosystem_respiration_log.RData")
 
 ## can you pre-select the relevant links where larger differences are present?

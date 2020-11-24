@@ -6,9 +6,9 @@ library(tictoc)
 library(future)
 
 # load results:
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/200917_detected_gpp.RData')
-load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/200917_summary_gpp.RData")
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/200918_gpp_segmented_results.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201022_summary_gpp_log.RData')
+load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201022_detected_gpp_log.RData")
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201023_segmented_gpp_log.RData')
 ## import time series only for selected pixels:
 df_ews %>%
     filter(n_ews == 5) %>%
@@ -25,7 +25,7 @@ lons <- df_ews %>%
     pull(lon)
 ## read the raw data files for such lats
 lats <- as.character(lats)
-path <- "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/ews_halfwindow_gpp/"
+path <- "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/ews_halfwindow_gpp_log/"
 files <- paste(path, "lat_",lats, ".csv", sep = "")
 
 tic()
@@ -100,7 +100,7 @@ annotation_df <- annotation_df %>%
     "Standard deviation" = "ews_std",
     "Autocorrelation lag-1" = "ews_ac1",
     "Kurtosis" = "ews_kur", "Skewness" = "ews_skw",
-    "Fractal dimension" = "ews_fd")) 
+    "Fractal dimension" = "ews_fd"))
 
 
 df_pixel %>%
