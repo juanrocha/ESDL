@@ -9,11 +9,14 @@ library(future)
 load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201022_summary_gpp_log.RData')
 load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201022_detected_gpp_log.RData")
 load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201023_segmented_gpp_log.RData')
+
 ## import time series only for selected pixels:
 df_ews %>%
     filter(n_ews == 5) %>%
     group_by(biome) %>%
     tally()
+
+
 ## select the latitudes of two pixes with high detection
 lats <- df_ews %>%
     filter(n_ews == 5) %>%

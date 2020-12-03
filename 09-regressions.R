@@ -1,15 +1,17 @@
+## This script test a series of regressions to undestand what explains the detection of early warnings.
+## J201127: currently it works with a subsample of the data on one variable. Next step, combine data for explanatory variables (precipitation, temperature)
+
 library(tidyverse)
 library(tictoc)
+library(corrgram)
 
-# load temperature data
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_pixels_terrestrial_temperature_FFT.RData')
+## First load the summary results of the ews:
+# df is the data frame with min, max and diff per statistic. ~150MB in memory
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201022_summary_gpp_log.RData') 
 
-## load summary results for GPP
-# df is the data frame with min, max and diff per statistic
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/200917_summary_gpp.RData') # use the old non-log results for test
-
+## then the sample file used to extract the samples: this is pixels where ews were detected and pixels witout detection. The sampling is stratified with the same proportion per biome.
 sample <- read_csv(
-    file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sample_pixels_gpp.csv",
+    file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sample_pixels_gpp.csv",
     col_types = cols(
         lon = col_double(),
         lat = col_double(),
@@ -20,88 +22,201 @@ sample <- read_csv(
 
 # J201017: Remember that the order of the list is the same as the order of the
 # sample dataset by lon lat.
-
-prop <- sample %>%
-  select(biome) %>%
-  group_by(biome) %>%
-  tally() %>%
-  mutate(prop = n / dim(sample)[1]) %>%
-  pull(prop)
+# prop <- sample %>%
+#     select(biome) %>%
+#     group_by(biome) %>%
+#     tally() %>%
+#     mutate(prop = n / dim(sample)[1]) %>%
+#     pull(prop)
 
 ## select a very small sample of the data for exploration and visualizations:
-
 dat <- sample %>%
-  mutate(id = row_number()) %>%
-  group_by(biome) %>%
-  slice_sample(prop = 0.05)
+    mutate(id = row_number()) %>%
+    group_by(biome) %>%
+    slice_sample(prop = 0.1)
+
+## Now load explanatory variables and reduce them immediately to the pixels on the sample
+# load precipitation data: 2.4Gb
+tic()
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sampled_pixels_terrestrial_precipitation_FFT_4GPP.RData')
+toc() #13s
+## reduce the out object to only the pixels sampled
+out_prec <- out[dat$id] 
+rm(out)
+
+# load temperature data: 2.4Gb
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sampled_pixels_terrestrial_temperature_FFT_4GPP.RData')
+
+## reduce the out object to only the pixels sampled
+out_temp <- out[dat$id] 
+rm(out)
+
 
 ## reduce df to only the pixels you sampled:
 df <- df %>%
   right_join(dat)
 
-df %>% ggplot(aes(value)) +
-  geom_density(
-    aes(fill = biome, color = biome), alpha = 0.3,
-    show.legend = FALSE) +
-  facet_wrap(stat ~ feature, scales = "free") +
-  theme_light()
+out_temp <- out_temp %>%
+  bind_rows() %>%
+  janitor::clean_names() %>%
+  rename(
+    temp_trend = trend,
+    temp_longtv = long_term_variability,
+    temp_annualc = annual_cycle,
+    temp_fasto = fast_oscillations
+  )
 
-out <- out[dat$id]
+out_prec <- out_prec %>%
+  bind_rows() %>%
+  janitor::clean_names() %>%
+  rename(
+    prec_trend = trend,
+    prec_longtv = long_term_variability,
+    prec_annualc = annual_cycle,
+    prec_fasto = fast_oscillations
+  )
 
-tic()
-out <- out %>%
-  map(janitor::clean_names)
-toc()
 
-
-out[[1]] %>%
-  pivot_longer(cols  = 1:4, names_to = "layer", values_to = "value") %>%
-  ggplot(aes(date, value)) +
-  geom_line() +
-  facet_wrap(~ layer, ncol = 1, scales = "free_y") +
-  theme_light()
+out <- full_join(out_prec, out_temp)
 
 tic()
 df_out <- out %>%
-  bind_rows() %>%
-  group_by(lon, lat) %>%
   rowwise() %>%
-  mutate(temp = sum(trend, long_term_variability, annual_cycle, fast_oscillations, na.rm = TRUE)) %>%
+  mutate(
+    rain = sum(prec_annualc, prec_fasto, prec_longtv, prec_trend, na.rm = TRUE),
+    temp = sum(temp_annualc, temp_fasto, temp_longtv, temp_trend, na.rm = TRUE)) %>%
   ungroup() %>%
   group_by(lon, lat) %>%
   summarise(
     mean_temp = mean(temp),
-    std_longterm = sd(long_term_variability),
-    std_annual_cycle = sd(annual_cycle),
-    std_fast_oscillations = sd(fast_oscillations),
+    temp_std_longterm = sd(temp_longtv),
+    temp_std_annual_cycle = sd(temp_annualc),
+    temp_std_fast_oscillations = sd(temp_fasto),
+    mean_rain = mean(rain),
+    prec_std_longterm = sd(prec_longtv),
+    prec_std_annual_cycle = sd(prec_annualc),
+    prec_std_fast_oscillations = sd(prec_fasto),
     .groups = "keep"
   )
-toc()
+toc() #31s
 
-
-## how to extract the slope for summarizing?
 tic()
-df_out$slope_temp <- out %>%
-  map_dbl( ~ lm(trend ~ date, data = .x) %>%
-    broom::tidy() %>%
-    # this is the slope:
-    filter(term == "date") %>% pull(estimate)
+df_out$temp_slope <- out_temp %>% 
+  group_by(lon, lat) %>%
+  group_split() %>%
+  map_dbl( ~ lm(temp_trend ~ date, data = .x) %>%
+             broom::tidy() %>%
+             # this is the slope:
+             filter(term == "date") %>% pull(estimate)
   )
-toc()
+toc()  # 25s
 
+tic()
+df_out$prec_slope <- out_prec %>% 
+  group_by(lon, lat) %>%
+  group_split() %>%
+  map_dbl( ~ lm(prec_trend ~ date, data = .x) %>%
+             broom::tidy() %>%
+             # this is the slope:
+             filter(term == "date") %>% pull(estimate)
+  )
+toc()  # 25s
 
-df_out %>% ggplot(aes(slope_temp)) + geom_density()
+## check result: ggplot(df_out, aes(prec_slope)) + geom_density()
+
 
 ## now join the two:
 df <- df %>%
   pivot_wider(
     names_from = c("stat", "feature"), values_from = value,
     names_sep = "_") %>%
-  left_join(df_out)
+    ungroup() %>% #skimr::skim()
+    left_join(df_out) 
 
 df %>%
   mutate(detect = !is.na(n_ews)) %>%
-  ggplot(aes(std_diff, std_fast_oscillations)) +
+  ggplot(aes(std_diff, temp_std_fast_oscillations)) +
   geom_point(aes(color = biome, alpha = detect))
 
 ## correlation matrix with smooths
+df %>% ungroup() %>%
+    select(std_diff, ac1_diff, kur_diff, skw_diff, fd_diff) %>% 
+    corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
+
+df %>% ungroup() %>%
+    select(contains("prec"), mean_rain) %>% 
+    corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
+
+df %>% ungroup() %>%
+  select(contains("temp"), mean_rain) %>% 
+  corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
+
+df %>% 
+    mutate(detected = !is.na(n_ews)) %>%
+    ggplot(aes(y = std_diff, x = (temp_std_fast_oscillations))) +
+    geom_point(aes(color = n_ews), size = 0.5, alpha = 0.6) +
+  geom_smooth(aes(group = detected)) +
+    facet_wrap(~biome, scales = "free") +
+    theme_light()
+
+## regression 
+
+
+
+fit <- lm(
+    formula = 
+      fd_diff ~ 
+      mean_temp + temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations + temp_slope 
+    + mean_rain + prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations + prec_slope 
+    + as.factor(biome)
+    ,
+    data = df %>% mutate(detected = !is.na(n_ews))
+)
+
+summary(fit)
+plot(fit)
+
+
+## Detected is a Y/N dummy, so I need a logistic regression:
+
+fit <- glm(
+  formula = 
+    detected ~ 
+    mean_temp + temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations + temp_slope 
+  + mean_rain + prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations + prec_slope 
+  + as.factor(biome)
+  , family = binomial(link = "logit"), 
+  data = df %>% mutate(detected = !is.na(n_ews))
+)
+
+summary(fit)
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### some visualizations ####
+
+df %>% 
+  ggplot(aes(value)) +
+  geom_density(
+  aes(fill = biome, color = biome), alpha = 0.3,
+  show.legend = FALSE) +
+  facet_wrap(stat ~ feature, scales = "free") +
+  theme_light()
+
+## plotting the Fourier tranform of one pixel.
+out_prec[[1]] %>%
+  pivot_longer(cols  = 1:4, names_to = "layer", values_to = "value") %>%
+  ggplot(aes(date, value)) +
+  geom_line() +
+  facet_wrap(~ layer, ncol = 1, scales = "free_y") +
+  theme_light()
