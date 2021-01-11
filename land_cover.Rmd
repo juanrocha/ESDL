@@ -211,3 +211,21 @@ pxl_summary %>%
 ## Notes:
 
 - Grab the number of rows produced by the pixel extraction automatically. Now I did the exercise for an inland place; but on the coast, some pixels will be missing values by default (before and after). So the % or change or other metrics should not be affected by geography.
+
+### Fixing the time stamp automatically:
+
+```{r}
+tic()
+dat <- tidync(lu_file) %>%
+    activate(lccs_class) %>%
+    hyper_filter(
+        # Colombia, Bogota
+        lat = dplyr::between(lat, 4.625, 4.875),
+        lon = dplyr::between(lon, -74.875, -74.675)) %>%
+    hyper_tibble() %>%
+    mutate(time = lubridate::as_date(time) %>% 
+               lubridate::year() )
+toc()
+dat
+```
+
