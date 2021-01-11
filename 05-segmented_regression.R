@@ -300,12 +300,18 @@ px_results %>%
         ksk = ifelse((kur == TRUE & skw == TRUE | kur == FALSE & skw == FALSE), TRUE, NA),
         ksk_amb = ifelse(kur == TRUE & skw == FALSE | kur == FALSE & skw == TRUE, TRUE, NA),
         amb = ifelse(ac1 == TRUE & std == FALSE | ac1 == FALSE & std == TRUE, TRUE, NA)
-    ) %>% summarize(
+    ) %>% #rowwise() %>%
+    mutate(
+        other = ifelse(is.na(csd) & is.na(csu) & is.na(ksk) & is.na(ksk_amb) & is.na(amb), TRUE, NA)
+    ) %>%
+    summarize(
         csd = sum(csd, na.rm = TRUE),
         csu = sum(csu, na.rm = TRUE),
         ksk = sum(ksk, na.rm = TRUE),
         ksk_amb = sum(ksk_amb, na.rm = TRUE),
-        amb = sum(amb, na.rm = TRUE))
+        amb = sum(amb, na.rm = TRUE),
+        other = sum(other, na.rm = TRUE)
+    )
 
 df_ews$n_ews %>% table()
 

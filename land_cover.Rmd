@@ -1,0 +1,213 @@
+---
+title: "Land cover exploration"
+output: html_notebook
+---
+
+Set up:
+
+```{r}
+library(tidync)
+library(tidyverse)
+library(tictoc)
+```
+Load one file for experimentation 
+```{r}
+lu_file <- "~/Documents/Projects/DATA/LULCC/dataset-satellite-land-cover-2016-2018/C3S-LC-L4-LCCS-Map-300m-P1Y-2018-v2.1.1.nc"
+```
+
+```{r}
+## variables: lccs_class, processed_flag, current_pixel_state, observation_count, change_count
+dat <- tidync(lu_file) %>%
+    activate() %>%
+    hyper_filter(
+        # Colombia, Bogota
+        lat = dplyr::between(lat, 4, 5),
+        lon = dplyr::between(lon, -74, -73)) %>%
+    hyper_tibble()
+```
+
+The resolution of the ESDL cube is:
+- Lon: 1440 Elements from -179.875 to 179.875
+- Lat: 720 Elements from 89.875 to -89.875
+
+```{r}
+(180 * 2) / 1440
+(90 *2) / 720
+```
+
+So the increments are by 1/4 of degree or 0.25. But the resolution of the LULCC dataset is 300m per pixel. To approximate the number of 300m pixels that need to be computed for a 0.25deg aggregation, let's do it in one pixel
+
+```{r}
+tic()
+dat <- tidync(lu_file) %>%
+    activate() %>%
+    hyper_filter(
+        # Colombia, Bogota
+        lat = dplyr::between(lat, 4.625, 4.875),
+        lon = dplyr::between(lon, -74.875, -74.675)) %>%
+    hyper_tibble()
+toc()
+```
+
+```{r}
+dat %>% ggplot(aes(lon, lat)) + geom_tile(aes(fill = as.factor(lccs_class)))
+```
+
+## Reconstruct the time series: 1-pixel
+
+```{r}
+files <- fs::dir_ls("~/Documents/Projects/DATA/LULCC/", recurse = 1) %>%
+    str_subset(pattern = ".nc")
+```
+
+
+
+```{r}
+# time series data frame
+tic()
+ts_df <- files %>%
+    map(., function (x) {
+        x %>% 
+            tidync() %>%
+            activate() %>%
+            hyper_filter(
+                # Colombia, Bogota
+                lat = dplyr::between(lat, 4.625, 4.875),
+                lon = dplyr::between(lon, -74.875, -74.675)) %>%
+            hyper_tibble() 
+    })
+toc()
+```
+
+Recover the year stamp (although there is a time var in the original file, just the wrong format):
+```{r}
+yrs <- files %>% 
+    str_split(pattern = "-") %>%
+    map(function (x) x[13]) %>% # the 13 element of the name is the year
+    unlist() %>%
+    as.numeric()
+```
+
+```{r}
+ts_df <- map2(ts_df, yrs, function(x,y) {
+    x$year <- y
+    return(x)
+    })
+```
+
+```{r}
+ts_df %>%
+    bind_rows() %>%
+    ggplot(aes(lon, lat)) +
+    geom_tile(aes(fill = as.factor(lccs_class))) +
+    facet_wrap(~year) +
+    theme_void()
+```
+
+### Compare 2 pixels: how much changed from one time to another?
+
+```{r}
+ts_df %>% bind_rows() %>% 
+    select(lccs_class, lon, lat, year) %>%
+    pivot_wider(values_from = lccs_class, names_from = year) %>%
+    mutate(changed = `2002` != `2018`) %>%
+    summarize(prop_change = (sum(changed)/n())*100)
+```
+It means that the 0.25$^\circ$ pixel which contains `r nrow(dat)` pixels at 300m scale has changed in ~4.6% of those 300m pixels. To further investigate _how_ it has changed, one would need to compute the transition matrix between land use classes. For now, one numeric vector will do for the regression in the paper.
+
+```{r}
+tic()
+pxl_df <- ts_df %>% bind_rows() %>% 
+    select(lccs_class, lon, lat, year) %>%
+    pivot_wider(values_from = lccs_class, names_from = year) %>%
+    # I don't know how to do this programmatically
+    mutate(change_2003 = `2002` != `2003`,
+           change_2004 = `2003` != `2004`,
+           change_2005 = `2004` != `2005`,
+           change_2006 = `2005` != `2006`,
+           change_2007 = `2006` != `2007`,
+           change_2008 = `2007` != `2008`,
+           change_2009 = `2008` != `2009`,
+           change_2010 = `2009` != `2010`,
+           change_2011 = `2010` != `2011`,
+           change_2012 = `2011` != `2012`,
+           change_2013 = `2012` != `2013`,
+           change_2014 = `2013` != `2014`,
+           change_2015 = `2014` != `2015`,
+           change_2016 = `2015` != `2016`,
+           change_2017 = `2016` != `2017`,
+           change_2018 = `2017` != `2018`) %>%
+    select(starts_with("change_")) %>% 
+    map_df(function(x) 100*sum(x)/length(x)) %>%
+    pivot_longer(cols = everything(), names_to = "year", values_to = "prop_change") %>% 
+    mutate(year = str_remove_all(year, "change_"), 
+           year = as.numeric(year)) 
+toc()
+```
+
+```{r}
+pxl_df %>% 
+    ggplot(aes(year, prop_change)) +
+    geom_line()
+```
+
+Notice that the sum of change calculated over time is the same as the calculation comparing only the first and last year `r pxl_df$prop_change %>% sum()`
+
+## Idea
+
+An ambitious option would be to compute a vector per pixel with the % of change [-100:100] _per land cover class_.
+
+```{r}
+ts_df %>% 
+    bind_rows() %>% 
+    select(lccs_class, lon, lat, year) %>%
+    pivot_wider(values_from = lccs_class, names_from = year) %>%
+    mutate(changed = `2002` != `2018`) %>%
+    select(lon, lat, original = `2002`, changed) %>%
+    group_by(original_lccs_class) %>%
+    summarize(prop_change = (sum(changed)/n())*100)
+```
+
+```{r}
+tic()
+pxl_summary <-  ts_df %>% 
+    bind_rows() %>% 
+    select(lccs_class, lon, lat, year) %>% 
+    filter(year == 2002 | year == 2018) %>%
+    group_by(lccs_class, year) %>%
+    summarize(pixels = n()) %>% 
+    ungroup() %>% group_by(lccs_class) %>% 
+    pivot_wider(
+        id_cols = lccs_class,names_from = year, values_from = pixels,
+        # adding 1 as missing value is to avoid division by zero
+        values_fill = 1) %>% #colSums() # 6480 pixels of 30*30mts
+    mutate(ratio = (`2018`/ 6480)/(`2002`/6480), pxl_change = (`2018`-`2002`)) 
+toc()
+pxl_summary
+```
+
+Calculating the proportion (or percentage) of change as in the previous exercise leave me with very small numbers because all is divided by 6480 pixels. Perhaps is good to leave here number of pixels as proxy of area, and later normalize before regression to a 100:-100 scale or zero mean unit variance. No acutally rescaling with center in zero, here zero has an important meaning that should not be masked by the mean, that is zero means the land use did not changed.
+
+```{r}
+pxl_summary %>%
+    mutate(lccs_class = as_factor(lccs_class)) %>% 
+    ggplot(aes(lccs_class, pxl_change)) +
+    geom_col(aes(fill = lccs_class)) +
+    coord_flip() +
+    labs(title = "Number of pixels in 2018 - 2002 per land cover type",
+         x = "Land cover class", y = "Number of 30*30m pixels") +
+    theme_light()
+```
+Ratio is not a good measurement, it depends of the magnitud of the initial and final values, even small numbers can produce big ratio values. Not useful for the analysis.
+```{r}
+pxl_summary %>%
+    mutate(lccs_class = as_factor(lccs_class)) %>% 
+    ggplot(aes(lccs_class, 1-ratio)) +
+    geom_col(aes(fill = lccs_class)) +
+    coord_flip() +
+    theme_light()
+```
+
+## Notes:
+
+- Grab the number of rows produced by the pixel extraction automatically. Now I did the exercise for an inland place; but on the coast, some pixels will be missing values by default (before and after). So the % or change or other metrics should not be affected by geography.

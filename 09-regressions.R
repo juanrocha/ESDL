@@ -1,9 +1,13 @@
 ## This script test a series of regressions to undestand what explains the detection of early warnings.
-## J201127: currently it works with a subsample of the data on one variable. Next step, combine data for explanatory variables (precipitation, temperature)
+## J201127: currently it works with a subsample of the data on one variable. 
+## Next step, combine data for explanatory variables (landuse and fires)
 
 library(tidyverse)
 library(tictoc)
 library(corrgram)
+library(tidymodels)
+
+set.seed(777)
 
 ## First load the summary results of the ews:
 # df is the data frame with min, max and diff per statistic. ~150MB in memory
@@ -33,7 +37,12 @@ sample <- read_csv(
 dat <- sample %>%
     mutate(id = row_number()) %>%
     group_by(biome) %>%
-    slice_sample(prop = 0.1)
+    slice_sample(prop = 0.5)
+
+## I can do this later
+# data_split <- initial_split(sample, strata = biome, prop = 3/4)
+# train_data <- training(data_split) 
+
 
 ## Now load explanatory variables and reduce them immediately to the pixels on the sample
 # load precipitation data: 2.4Gb
@@ -126,12 +135,15 @@ toc()  # 25s
 
 
 ## now join the two:
+tic()
 df <- df %>%
   pivot_wider(
     names_from = c("stat", "feature"), values_from = value,
     names_sep = "_") %>%
     ungroup() %>% #skimr::skim()
     left_join(df_out) 
+toc()
+
 
 df %>%
   mutate(detect = !is.na(n_ews)) %>%
@@ -161,46 +173,103 @@ df %>%
 
 ## regression 
 
+df <- df %>% mutate(detected = !is.na(n_ews))
 
+y_vars <- str_subset(names(df), pattern = "diff")
+out_lm <- list()
 
-fit <- lm(
+tic()
+out_lm <- map(.x = y_vars, ~lm( 
     formula = 
-      fd_diff ~ 
-      mean_temp + temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations + temp_slope 
-    + mean_rain + prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations + prec_slope 
+      eval(sym(.x)) ~ 
+      mean_temp + temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations# + temp_slope 
+    + mean_rain + prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations #+ prec_slope 
     + as.factor(biome)
     ,
-    data = df %>% mutate(detected = !is.na(n_ews))
-)
+    data = df
+))
+toc()
+
 
 summary(fit)
 plot(fit)
 
 
 ## Detected is a Y/N dummy, so I need a logistic regression:
-
+tic()
 fit <- glm(
   formula = 
     detected ~ 
-    mean_temp + temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations + temp_slope 
-  + mean_rain + prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations + prec_slope 
+    mean_temp + temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations #+ temp_slope 
+  + mean_rain + prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations #+ prec_slope 
   + as.factor(biome)
   , family = binomial(link = "logit"), 
-  data = df %>% mutate(detected = !is.na(n_ews))
+  data = df
 )
-
+toc()
 summary(fit)
 
+tic()
+df_lm <- out_lm %>%
+  map(tidy) %>%
+  map2(., y_vars,  function(x,y) {
+    x$response <- y
+    return(x)}) %>%
+  bind_rows() %>%
+  mutate(term = str_remove_all(term, "as.factor\\(biome\\)"))
+toc()
 
 
+df_lm %>%
+  mutate(term = factor(term, levels = rev(unique(term)))) %>%
+  mutate(conf.high = estimate + std.error,
+         conf.low = estimate - std.error,) %>%
+  mutate(p_value = ifelse(
+    p.value < 0.01, "< 0.01" ,
+    ifelse(p.value < 0.1, "< 0.1", "> 0.1")
+  )) %>%
+  ggplot(aes(x = estimate, y = term)) +
+  geom_vline(xintercept = 0, color = "grey84", linetype = 2, size = 0.5) +
+  geom_point(aes(shape = p_value, color = p_value), size = 2, show.legend = TRUE) +
+  scale_shape_manual(name = "p value", values = c(19,7,1)) +
+  geom_errorbarh(
+    aes(xmin = conf.low, xmax = conf.high, height = .25, color = p_value), 
+    size = 0.3) +
+  scale_x_continuous(minor_breaks = NULL, breaks = scales::pretty_breaks(n=3)) +
+  scale_color_manual(name = "p value",values = c("dodgerblue", "orange", "purple")) +
+  theme_light(base_size = 13) +
+  theme(legend.position = "bottom", 
+        axis.title.y = element_blank(), 
+        axis.text.x = element_text(size = 12) ) +
+  facet_grid(~ response, scales = "free", switch = "y", space = "free_y")
+  
+
+map(out_lm, mosaic::rsquared)
 
 
-
-
-
-
-
-
+fit %>% 
+  tidy() %>%
+  mutate(term = factor(term, levels = rev(unique(term)))) %>%
+  mutate(conf.high = estimate + std.error,
+         conf.low = estimate - std.error,) %>%
+  mutate(p_value = ifelse(
+    p.value < 0.01, "< 0.01" ,
+    ifelse(p.value < 0.1, "< 0.1", "> 0.1")
+  )) %>%
+  ggplot(aes(x = estimate, y = term)) +
+  geom_vline(xintercept = 0, color = "grey84", linetype = 2, size = 0.5) +
+  geom_point(aes(shape = p_value, color = p_value), size = 2, show.legend = TRUE) +
+  scale_shape_manual(name = "p value", values = c(19,7,1)) +
+  geom_errorbarh(
+    aes(xmin = conf.low, xmax = conf.high, height = .25, color = p_value), 
+    size = 0.3) +
+  scale_x_continuous(minor_breaks = NULL, breaks = scales::pretty_breaks(n=3)) +
+  scale_color_manual(name = "p value",values = c("dodgerblue", "orange", "purple")) +
+  theme_light(base_size = 13) +
+  theme(legend.position = "bottom", 
+        axis.title.y = element_blank(), 
+        axis.text.x = element_text(size = 12) )
+  
 
 
 #### some visualizations ####
