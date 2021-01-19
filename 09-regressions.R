@@ -37,12 +37,7 @@ sample <- read_csv(
 dat <- sample %>%
     mutate(id = row_number()) %>%
     group_by(biome) %>%
-    slice_sample(prop = 0.5)
-
-## I can do this later
-# data_split <- initial_split(sample, strata = biome, prop = 3/4)
-# train_data <- training(data_split) 
-
+    slice_sample(prop = 0.1)
 
 ## Now load explanatory variables and reduce them immediately to the pixels on the sample
 # load precipitation data: 2.4Gb
@@ -85,8 +80,10 @@ out_prec <- out_prec %>%
     prec_fasto = fast_oscillations
   )
 
-
+tic()
 out <- full_join(out_prec, out_temp)
+toc()
+
 
 tic()
 df_out <- out %>%
@@ -131,8 +128,9 @@ df_out$prec_slope <- out_prec %>%
   )
 toc()  # 25s
 
-## check result: ggplot(df_out, aes(prec_slope)) + geom_density()
-
+## check result: ggplot(df_out, aes(temp_slope)) + geom_density()
+### J210118: Do I need to do feature engineering e.g. rescaling again units of T
+###  and precipitation due to the different units and magnitudes?
 
 ## now join the two:
 tic()
@@ -148,51 +146,97 @@ toc()
 df %>%
   mutate(detect = !is.na(n_ews)) %>%
   ggplot(aes(std_diff, temp_std_fast_oscillations)) +
-  geom_point(aes(color = biome, alpha = detect))
+  geom_point(aes(color = biome), show.legend = FALSE) +
+  facet_wrap(.~detect, ncol = 1)
 
 ## correlation matrix with smooths
 df %>% ungroup() %>%
-    select(std_diff, ac1_diff, kur_diff, skw_diff, fd_diff) %>% 
-    corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
+  mutate(detect = !is.na(n_ews)) %>%
+  select(std_diff, ac1_diff, kur_diff, skw_diff, fd_diff, detect) %>% 
+  #corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
+  GGally::ggpairs(
+    aes(fill = detect, color = detect),
+    lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
+
 
 df %>% ungroup() %>%
-    select(contains("prec"), mean_rain) %>% 
-    corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
+  mutate(detect = !is.na(n_ews)) %>%
+  select(contains("prec"), mean_rain, detect) %>% 
+  # corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
+  GGally::ggpairs(
+    aes(fill = detect, color = detect),
+    lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
 
 df %>% ungroup() %>%
-  select(contains("temp"), mean_rain) %>% 
-  corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
+  mutate(detect = !is.na(n_ews)) %>%
+  select(contains("temp"), mean_temp, detect) %>% 
+  # corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
+  GGally::ggpairs(
+    aes(fill = detect, color = detect),
+    lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
 
 df %>% 
-    mutate(detected = !is.na(n_ews)) %>%
-    ggplot(aes(y = std_diff, x = (temp_std_fast_oscillations))) +
-    geom_point(aes(color = n_ews), size = 0.5, alpha = 0.6) +
+  mutate(detected = !is.na(n_ews)) %>%
+  ggplot(aes(y = std_diff, x = (temp_std_fast_oscillations))) +
+  geom_point(aes(color = n_ews), size = 0.5, alpha = 0.6) +
   geom_smooth(aes(group = detected)) +
-    facet_wrap(~biome, scales = "free") +
-    theme_light()
+  facet_wrap(~biome, scales = "free") +
+  theme_light()
+
+
+
+# load land use
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sampled_pixels_land_cover_4GPP.RData')
+
+df_land <- dat %>% 
+  left_join(prop_change_df)
+
+
+df_land2 <- dat %>% 
+  left_join(
+    pxl_land_cover_change %>%
+      select(-c(2,3)) %>%
+      ungroup() %>% 
+      group_by(lon, lat) %>% 
+      pivot_wider(names_from = lccs_class, values_from = pxl_change, values_fill = 0,
+                  names_prefix = "lcc_") 
+  )
+
+df_land <- left_join(df_land, df_land2)
+
+df <- left_join(df, df_land)
 
 ## regression 
-
+## I can do this later | no yet, dat is just one of the response variables.
+# data_split <- initial_split(sample, strata = biome, prop = 3/4)
+# train_data <- training(data_split)
+# test_data <- testing(data_split)
+# 
+# 
+# Based on the correlograms above, I will exclude terms that are strongly correlated.
+# For precipitation prec_std_longterm.
+# For temperature: I don't know, strong corr in mean_temp, temp_std_annual_cycle, and fast_oscillations
+# In a way temp variability will be explained as well by the fixed effects of biomes.
+# See for example: the lower the temp the higher the detection, but the higher the std_fast_oscillations,
+# the higher the detection.
 df <- df %>% mutate(detected = !is.na(n_ews))
 
 y_vars <- str_subset(names(df), pattern = "diff")
+x_vars <- str_subset(names(df), pattern = "temp|prec|rain|prop_change|lcc_") %>%
+  str_flatten (., " + ")
 out_lm <- list()
 
 tic()
 out_lm <- map(.x = y_vars, ~lm( 
     formula = 
-      eval(sym(.x)) ~ 
-      mean_temp + temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations# + temp_slope 
-    + mean_rain + prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations #+ prec_slope 
-    + as.factor(biome)
-    ,
+      eval(sym(.x)) ~ mean_temp + temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations + mean_rain + prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations + temp_slope  + prop_change + lcc_10 + lcc_11 + lcc_12 + lcc_30 + lcc_40 + lcc_50 + lcc_160 + lcc_170 + lcc_190 + lcc_210 + lcc_20 + lcc_60 + lcc_70 + lcc_100 + lcc_110 + lcc_120 + lcc_121 + lcc_130 + lcc_61 + lcc_62 + lcc_153 + lcc_180 + lcc_150 + lcc_200 + lcc_122 + lcc_80 + lcc_90 +  lcc_202 + lcc_201 + lcc_152 + lcc_81 + lcc_71 + lcc_72 + as.factor(biome),
     data = df
 ))
 toc()
 
 
-summary(fit)
-plot(fit)
+summary(out_lm[[5]])
+# plot(fit)
 
 
 ## Detected is a Y/N dummy, so I need a logistic regression:
@@ -200,10 +244,8 @@ tic()
 fit <- glm(
   formula = 
     detected ~ 
-    mean_temp + temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations #+ temp_slope 
-  + mean_rain + prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations #+ prec_slope 
-  + as.factor(biome)
-  , family = binomial(link = "logit"), 
+    mean_temp + temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations + mean_rain + prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations + temp_slope  + prop_change + lcc_10 + lcc_11 + lcc_12 + lcc_30 + lcc_40 + lcc_50 + lcc_160 + lcc_170 + lcc_190 + lcc_210 + lcc_20 + lcc_60 + lcc_70 + lcc_100 + lcc_110 + lcc_120 + lcc_121 + lcc_130 + lcc_61 + lcc_62 + lcc_153 + lcc_180 + lcc_150 + lcc_200 + lcc_122 + lcc_80 + lcc_90 +  lcc_202 + lcc_201 + lcc_152 + lcc_81 + lcc_71 + lcc_72 + 
+    as.factor(biome), family = binomial(link = "logit"), 
   data = df
 )
 toc()
@@ -219,14 +261,18 @@ df_lm <- out_lm %>%
   mutate(term = str_remove_all(term, "as.factor\\(biome\\)"))
 toc()
 
+df_glm <- fit %>%
+  tidy() %>%
+  add_column(response = "detect") %>% 
+  mutate(term = str_remove_all(term, "as.factor\\(biome\\)"))
 
-df_lm %>%
+df_lm %>% bind_rows(df_glm) %>%
   mutate(term = factor(term, levels = rev(unique(term)))) %>%
   mutate(conf.high = estimate + std.error,
          conf.low = estimate - std.error,) %>%
   mutate(p_value = ifelse(
     p.value < 0.01, "< 0.01" ,
-    ifelse(p.value < 0.1, "< 0.1", "> 0.1")
+    ifelse(p.value < 0.05, "< 0.05", "> 0.05")
   )) %>%
   ggplot(aes(x = estimate, y = term)) +
   geom_vline(xintercept = 0, color = "grey84", linetype = 2, size = 0.5) +
@@ -243,6 +289,10 @@ df_lm %>%
         axis.text.x = element_text(size = 12) ) +
   facet_grid(~ response, scales = "free", switch = "y", space = "free_y")
   
+
+## J210119: Land use is not working. I suspect I have issues with unbalanced dataset
+## I sampled with biome as strata but if one run the regression on ac1 or std
+## the stratification might change. Need to go back to the theory and the whiteboard.
 
 map(out_lm, mosaic::rsquared)
 
