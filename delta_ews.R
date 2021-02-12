@@ -10,10 +10,10 @@ library(here)
 # of the distribution. Updating also relative paths for reproducibility
 
 wd <- here() 
-key_var <- "ews_halfwindow_terrestrial_ecosystem_respiration_log"
+key_var <- "ews_halfwindow_lai_log"
 
 ## load the keys to the file
-load('keys_terrestrial_ecosystem_respiration_log.RData')
+load('keys_lai_log.RData')
 
 files <- list.files(path = paste0("Results/", key_var))
 
@@ -58,7 +58,11 @@ extract_delta <- function(x){
         summarize(
             delta = diff(value),
             abruptness = diff(time)
-        )
+        ) %>%  # the following step is necessary because there is non-unique values
+        # on the fractal dimension. Many datapoints that meet the condition min-max.
+        filter(abruptness == min(abruptness)) %>% 
+        unique() %>%  ungroup()
+        
     #toc() # 3 secs
     
     return(df_delta)
@@ -67,7 +71,7 @@ extract_delta <- function(x){
 ## Testing
 # test: 4.2 secs 
 tic()
-files[1] %>% extract_delta()
+files[100] %>% extract_delta()
 toc()
 
 # all:
@@ -77,10 +81,13 @@ deltas <- list()
 tic()
 deltas <- files %>%
     map(., extract_delta)
-toc() # 26mins sequential
+toc() # 29mins sequential
 
 # recover latitudes from file names
+tic()
 lat <- files %>% str_remove("lat_") %>% str_remove(".csv") %>% as.numeric()
+toc()
+
 ## Add corrected latitudes
 tic()
 deltas <- deltas %>%
@@ -92,6 +99,9 @@ deltas <- deltas %>%
 
 tic()
 deltas %>%
+    group_by(lon,lat, ews) %>% 
+    filter(delta == max(delta)) %>%
+    ungroup() %>%
     mutate(ews = str_remove(ews, pattern = "ews_")) %>% 
     pivot_wider(
         id_cols = c(lon,lat),
@@ -101,9 +111,14 @@ deltas %>%
     )
 toc()
 
+setwd(wd)
 
+save(deltas, file = "Results/210212_deltas_lai_log.RData")
 
 #### some viz ####
+
+
+
 
 deltas %>%
     ggplot(aes(abruptness)) +
@@ -116,3 +131,8 @@ deltas %>%
     geom_tile(aes(fill = delta)) +
     scale_fill_gradient2(high = "orange", mid = "grey25", low = "pink") +
     theme_void()
+
+
+deltas %>%
+    dplyr::select(starts_with("delta")) %>% 
+    GGally::ggpairs()
