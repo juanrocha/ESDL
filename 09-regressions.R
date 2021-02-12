@@ -45,21 +45,24 @@ tic()
 load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sampled_pixels_terrestrial_precipitation_FFT_4GPP.RData')
 toc() #13s
 ## reduce the out object to only the pixels sampled
-out_prec <- out[dat$id] 
+out_prec <- out #[dat$id] 
 rm(out)
 
 # load temperature data: 2.4Gb
 load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sampled_pixels_terrestrial_temperature_FFT_4GPP.RData')
 
 ## reduce the out object to only the pixels sampled
-out_temp <- out[dat$id] 
+out_temp <- out #[dat$id] 
 rm(out)
 
 
 ## reduce df to only the pixels you sampled:
+tic()
 df <- df %>%
   right_join(dat)
+toc()
 
+tic()
 out_temp <- out_temp %>%
   bind_rows() %>%
   janitor::clean_names() %>%
@@ -69,7 +72,9 @@ out_temp <- out_temp %>%
     temp_annualc = annual_cycle,
     temp_fasto = fast_oscillations
   )
+toc() # 5.4s
 
+tic()
 out_prec <- out_prec %>%
   bind_rows() %>%
   janitor::clean_names() %>%
@@ -79,10 +84,12 @@ out_prec <- out_prec %>%
     prec_annualc = annual_cycle,
     prec_fasto = fast_oscillations
   )
+toc() # 5.7s
+
 
 tic()
 out <- full_join(out_prec, out_temp)
-toc()
+toc() # 49s
 
 
 tic()
@@ -104,7 +111,7 @@ df_out <- out %>%
     prec_std_fast_oscillations = sd(prec_fasto),
     .groups = "keep"
   )
-toc() #31s
+toc() #31s | 1039.744s, 17min
 
 tic()
 df_out$temp_slope <- out_temp %>% 
@@ -115,7 +122,7 @@ df_out$temp_slope <- out_temp %>%
              # this is the slope:
              filter(term == "date") %>% pull(estimate)
   )
-toc()  # 25s
+toc()  # 25s | 24min
 
 tic()
 df_out$prec_slope <- out_prec %>% 
@@ -126,7 +133,7 @@ df_out$prec_slope <- out_prec %>%
              # this is the slope:
              filter(term == "date") %>% pull(estimate)
   )
-toc()  # 25s
+toc()  # 25s | 16min
 
 ## check result: ggplot(df_out, aes(temp_slope)) + geom_density()
 ### J210118: Do I need to do feature engineering e.g. rescaling again units of T
@@ -140,49 +147,12 @@ df <- df %>%
     names_sep = "_") %>%
     ungroup() %>% #skimr::skim()
     left_join(df_out) 
-toc()
+toc() #1s
 
-
-df %>%
-  mutate(detect = !is.na(n_ews)) %>%
-  ggplot(aes(std_diff, temp_std_fast_oscillations)) +
-  geom_point(aes(color = biome), show.legend = FALSE) +
-  facet_wrap(.~detect, ncol = 1)
-
-## correlation matrix with smooths
-df %>% ungroup() %>%
-  mutate(detect = !is.na(n_ews)) %>%
-  select(std_diff, ac1_diff, kur_diff, skw_diff, fd_diff, detect) %>% 
-  #corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
-  GGally::ggpairs(
-    aes(fill = detect, color = detect),
-    lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
-
-
-df %>% ungroup() %>%
-  mutate(detect = !is.na(n_ews)) %>%
-  select(contains("prec"), mean_rain, detect) %>% 
-  # corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
-  GGally::ggpairs(
-    aes(fill = detect, color = detect),
-    lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
-
-df %>% ungroup() %>%
-  mutate(detect = !is.na(n_ews)) %>%
-  select(contains("temp"), mean_temp, detect) %>% 
-  # corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
-  GGally::ggpairs(
-    aes(fill = detect, color = detect),
-    lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
-
-df %>% 
-  mutate(detected = !is.na(n_ews)) %>%
-  ggplot(aes(y = std_diff, x = (temp_std_fast_oscillations))) +
-  geom_point(aes(color = n_ews), size = 0.5, alpha = 0.6) +
-  geom_smooth(aes(group = detected)) +
-  facet_wrap(~biome, scales = "free") +
-  theme_light()
-
+### Now you can fee some memory:
+rm(out_prec)
+rm(out_temp)
+###
 
 
 # load land use
@@ -206,21 +176,139 @@ df_land <- left_join(df_land, df_land2)
 
 df <- left_join(df, df_land)
 
-## regression 
-## I can do this later | no yet, dat is just one of the response variables.
-# data_split <- initial_split(sample, strata = biome, prop = 3/4)
-# train_data <- training(data_split)
-# test_data <- testing(data_split)
+save(df, file = "Results/210117_processed_reg_data_GPP.RData")
+## clean up a bit
+rm(df_land, df_land2, out, prop_change_df, pxl_land_cover_change, sample)
+
+
+#### Data exploration to decide on variables ####
+df <- df %>% mutate(detected = !is.na(n_ews))
+
+
+df %>%
+  ggplot(aes(std_diff, temp_std_fast_oscillations)) +
+  geom_point(aes(color = biome), show.legend = FALSE, size = 0.1, alpha = .4) +
+  facet_wrap(.~detected, ncol = 1)
+
+## correlation matrix
+df %>% ungroup() %>%
+  select(std_diff, ac1_diff, kur_diff, skw_diff, fd_diff, detected) %>% 
+  #corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
+  GGally::ggpairs(
+    aes(fill = detected, color = detected),
+    lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
+
+## For rain, one could drop the slope (very little variability) and the mean_rain (high corr)
+df %>% select(prop_change, contains("prec"), mean_rain, detected) %>% 
+  # corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
+  GGally::ggpairs(
+    aes(fill = detected, color = detected),
+    lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
+
+## For temperature, there is a lot of correlation, but the distributions are quite different
+## between detected and non-detected. That can be accounted by biome (or lat, lon controls).
+## The hypothesis is whether is slow change or stochastic processes, for T I think one should leave them all in.
+df %>% select(prop_change, contains("temp"), mean_temp, detected) %>% 
+  # corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
+  GGally::ggpairs(
+    aes(fill = detected, color = detected),
+    lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
+
+
+## land use
+df %>% 
+  select(std_diff, detected, contains("lcc_")) %>% 
+  select(1,2,21:30) %>%
+  # corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
+  GGally::ggpairs(
+    aes(fill = detected, color = detected),
+    lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
+
+df %>% ggplot(aes(prop_change)) + 
+  geom_density(aes(fill = detected), alpha = .3) + 
+  scale_x_continuous(trans = "log1p") + 
+  facet_wrap(~biome, scales = "free")
+
+df %>% 
+  ggplot(aes(ac1_diff, prop_change)) +
+  geom_point(aes(color = biome, alpha = detected), show.legend = FALSE) +
+  facet_wrap(~biome) 
+
+## Rock and ice should be dropped, maybe inland water?
+df %>% 
+  ggplot(aes(y = std_diff, x = (temp_std_fast_oscillations))) +
+  geom_point(aes(color = n_ews), size = 0.5, alpha = 0.6) +
+  geom_smooth(aes(group = detected)) +
+  facet_wrap(~biome, scales = "free") +
+  theme_light()
+
 # 
-# 
+# df <- df %>%
+#   filter(biome != "Rock and Ice") %>%
+#   select( -lcc_82, -lcc_220)
+
+
+#### Regressions & model fitting #### 
+
 # Based on the correlograms above, I will exclude terms that are strongly correlated.
 # For precipitation prec_std_longterm.
 # For temperature: I don't know, strong corr in mean_temp, temp_std_annual_cycle, and fast_oscillations
 # In a way temp variability will be explained as well by the fixed effects of biomes.
 # See for example: the lower the temp the higher the detection, but the higher the std_fast_oscillations,
 # the higher the detection.
-df <- df %>% mutate(detected = !is.na(n_ews))
 
+
+## Data split
+data_split <- initial_split(df, strata = biome, prop = 3/4)
+train_data <- training(data_split)
+test_data <- testing(data_split)
+
+## data-processing and feature engineering:
+## land-use terms: lcc_10 + lcc_11 + lcc_12 + lcc_30 + lcc_40 + lcc_50 + lcc_160 + lcc_170 + lcc_190 + lcc_210 + lcc_20 + lcc_60 + lcc_70 + lcc_100 + lcc_110 + lcc_120 + lcc_121 + lcc_130 + lcc_61 + lcc_62 + lcc_153 + lcc_180 + lcc_150 + lcc_200 + lcc_122 + lcc_80 + lcc_90 +  lcc_202 + lcc_201 + lcc_152 + lcc_81 + lcc_71 + lcc_72 +
+
+
+ews_rcp <- recipe(
+  std_diff ~ mean_temp + temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations + 
+    prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations + 
+    prop_change + biome, data = train_data) %>%
+  step_filter(biome != "Rock and Ice") %>% 
+  step_dummy(biome) %>% 
+  #step_mutate(detected = as.numeric(detected)) %>% 
+  step_zv(all_predictors()) %>%
+  step_normalize(all_numeric())
+
+
+lm_model <- linear_reg() %>%
+  set_engine("lm")
+
+
+  
+lm_workflow <- workflow() %>% 
+  add_model(lm_model) %>% 
+  add_recipe(ews_rcp)
+
+tic()
+lm_fit <- fit(lm_workflow, train_data)
+toc()
+
+
+pull_workflow_fit(lm_fit) %>% broom::tidy()
+
+
+folds <- vfold_cv(train_data, v=10)
+
+keep_pred <- control_resamples(save_pred = TRUE)
+
+tic()
+fit_res <- lm_workflow %>% 
+  fit_resamples(resamples = folds, control = keep_pred)
+toc()
+
+collect_metrics(fit_res)
+
+
+
+####
 y_vars <- str_subset(names(df), pattern = "diff")
 x_vars <- str_subset(names(df), pattern = "temp|prec|rain|prop_change|lcc_") %>%
   str_flatten (., " + ")

@@ -1,12 +1,21 @@
 library(tidyverse)
 library(tictoc)
+library(here)
 
 
-setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/ews_halfwindow_terrestrial_ecosystem_respiration_log")
+wd <- here()
+key_var <- "ews_halfwindow_terrestrial_ecosystem_respiration_log"
 
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_terrestrial_ecosystem_respiration_log.RData')
+# setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/ews_halfwindow_terrestrial_ecosystem_respiration_log")
 
-files <- list.files()
+## load the keys to the file
+load('keys_terrestrial_ecosystem_respiration_log.RData')
+
+files <- list.files(path = paste0("Results/", key_var))
+
+## for the function to work I still need to declare working directory
+setwd(dir = paste0(wd,"/Results/", key_var))
+
 
 summary_all <- function(x){
     ## read csv
