@@ -10,10 +10,10 @@ library(here)
 # of the distribution. Updating also relative paths for reproducibility
 
 wd <- here() 
-key_var <- "ews_halfwindow_lai_log"
+key_var <- "ews_halfwindow_chlorA_log"
 
 ## load the keys to the file
-load('keys_lai_log.RData')
+load('keys_chlorA_log.RData')
 
 files <- list.files(path = paste0("Results/", key_var))
 
@@ -81,7 +81,7 @@ deltas <- list()
 tic()
 deltas <- files %>%
     map(., extract_delta)
-toc() # 29mins sequential
+toc() # 29mins sequential | 87mins ChlorA
 
 # recover latitudes from file names
 tic()
@@ -98,11 +98,12 @@ deltas <- deltas %>%
     bind_rows()
 
 tic()
-deltas %>%
+deltas <- deltas %>%
     group_by(lon,lat, ews) %>% 
     filter(delta == max(delta)) %>%
     ungroup() %>%
     mutate(ews = str_remove(ews, pattern = "ews_")) %>% 
+    #group_by(lon,lat) %>% 
     pivot_wider(
         id_cols = c(lon,lat),
         names_from = ews,
@@ -113,7 +114,7 @@ toc()
 
 setwd(wd)
 
-save(deltas, file = "Results/210212_deltas_lai_log.RData")
+save(deltas, file = "Results/210212_deltas_chlorA_log.RData")
 
 #### some viz ####
 
