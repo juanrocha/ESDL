@@ -158,6 +158,62 @@ save(df_delta_detected,
 
 fls
 
+#### Do the sampling: ####
+
+load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/210301_delta_detected_ChlorA_log.RData")
+load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/210301_delta_detected_GPP_log.RData")
+load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/210301_delta_detected_TER_log.RData")
+
+
+tic()
+df_delta_detected <-  df_delta_detected %>% 
+    mutate(biome = fct_explicit_na(biome, na_level = "(Missing)"))
+toc() # 24sec
+
+
+df_delta_detected %>% 
+    ggplot(aes(lon,lat)) +
+    geom_tile(aes(fill = n_ews))
+
+detected <- df_delta_detected %>% 
+    select(n_ews) %>% 
+    filter(n_ews > 0)
+
+pxls <- detected %>% 
+    ungroup() %>% group_by(biome) %>% 
+    tally() 
+
+undetected <- df_delta_detected %>%  
+    filter(n_ews == 0) %>% 
+    ungroup() %>% #group_by(biome) %>% 
+    split(., f = .$biome) %>% 
+    map2(., .y = pxls$n, 
+         .f = function(x,y) slice_sample(.data = x,  n = y, replace = FALSE)) %>% 
+    bind_rows() %>% 
+    select(lon, lat, biome, n_ews)
+
+
+undetected %>% 
+    ungroup() %>% group_by(biome) %>% 
+    tally(name = "n2") %>% 
+    left_join(pxls) %>% 
+    mutate(balanced = n == n2)
+
+pxl_sample <- bind_rows(detected, undetected)
+
+write_csv(pxl_sample,
+          file = "Results/sample_pixels_delta_TER.csv")
+
+
+
+
+
+
+
+
+
+
+
 
 ## compare with old results:
 load("Results/200917_detected_gpp.RData")

@@ -16,11 +16,11 @@ library(fractaldim)
 # /processed_leaf_area_index
 # /processed_root_moisture | don't use this data, it's too measy, takes long time, does not return results.
 
-setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/processed_terrestrial_ecosystem_respiration_log")
+setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/processed_lai_log2")
 files <- list.files()
 
 #load(files[2])
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_terrestrial_ecosystem_respiration_log.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/keys_lai_log2.RData')
 # key files are:
 # /keys_gpp.RData
 # /keys_chlorA.RData
@@ -123,7 +123,7 @@ plan(multisession, workers = 10)
 tic()
 results <- files %>%
     future_map(early_warning, window, .progress = TRUE)
-toc() # 60 mins terrestrial data, 2.15 hours marine, 2.5hrs with log-gpp, 4.8hr log-chlorA, 3.7hrs; 2.3hrs TER
+toc() # 60 mins terrestrial data, 2.15 hours marine, 2.5hrs with log-gpp, 4.8hr log-chlorA, 3.7hrs; 2.3hrs TER | 4.63 hours with LAI2 dataset.
 
 ## J200805: `early_warning` finished in the LAI data  but results were not stored, it ran out memory I believe. I can recovered however from the files produced later.
 files2 <- list.files(
