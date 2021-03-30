@@ -24,11 +24,11 @@ files <- fs::dir_ls("~/Documents/Projects/DATA/LULCC/", recurse = 1) %>%
 ## Sampling data:
 # Remember that sampling and regressions will be done separately for each response variable (GPP, TER, LAI, or ChlorA). So one needs to load as well the sampling the pixels for land use dataset separately. Coordinates come from:
 sample <- read_csv(
-    file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sample_pixels_lai.csv",
+    file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sample_pixels_delta_TER.csv",
     col_types = cols(
         lon = col_double(),
         lat = col_double(),
-        biome_code = col_double(),
+        #biome_code = col_double(),
         biome = col_character(),
         n_ews = col_double()
     )) %>%
@@ -152,7 +152,7 @@ length(lcc_output)
 
 save(
     pxl_land_cover_change, prop_change_df,
-    file = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sampled_pixels_land_cover_4LAI.RData"
+    file = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sampled_pixels_delta_land_cover_TER.RData"
 )
 
 ## Remember that the order of the elements in the list corresponds to the order in the "sample" object

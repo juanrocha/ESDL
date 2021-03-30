@@ -1,4 +1,4 @@
-## This script test a series of regressions to undestand what explains the detection of early warnings.
+## This script test a series of regressions to understand what explains the detection of early warnings.
 ## J201127: currently it works with a subsample of the data on one variable. 
 ## Next step, combine data for explanatory variables (landuse and fires)
 
@@ -11,15 +11,18 @@ set.seed(777)
 
 ## First load the summary results of the ews:
 # df is the data frame with min, max and diff per statistic. ~150MB in memory
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201022_summary_gpp_log.RData') 
+# load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201022_summary_gpp_log.RData') 
+
+# new analysis with deltas: deltas is a df with the delta and abruptness per statistic. 19Mb
+load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/210212_deltas_gpp_log.RData")
 
 ## then the sample file used to extract the samples: this is pixels where ews were detected and pixels witout detection. The sampling is stratified with the same proportion per biome.
 sample <- read_csv(
-    file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sample_pixels_gpp.csv",
+    file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sample_pixels_delta_gpp.csv",
     col_types = cols(
         lon = col_double(),
         lat = col_double(),
-        biome_code = col_double(),
+        #biome_code = col_double(),
         biome = col_character(),
         n_ews = col_double()
     ))
@@ -42,23 +45,23 @@ dat <- sample %>%
 ## Now load explanatory variables and reduce them immediately to the pixels on the sample
 # load precipitation data: 2.4Gb
 tic()
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sampled_pixels_terrestrial_precipitation_FFT_4GPP.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sampled_pixels_delta_precipitation_FFT_GPP.RData')
 toc() #13s
 ## reduce the out object to only the pixels sampled
-out_prec <- out #[dat$id] 
+out_prec <- out[dat$id] 
 rm(out)
 
 # load temperature data: 2.4Gb
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sampled_pixels_terrestrial_temperature_FFT_4GPP.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sampled_pixels_delta_temperature_FFT_GPP.RData')
 
 ## reduce the out object to only the pixels sampled
-out_temp <- out #[dat$id] 
+out_temp <- out[dat$id] 
 rm(out)
 
 
 ## reduce df to only the pixels you sampled:
 tic()
-df <- df %>%
+deltas <- deltas %>%
   right_join(dat)
 toc()
 
@@ -141,10 +144,10 @@ toc()  # 25s | 16min
 
 ## now join the two:
 tic()
-df <- df %>%
-  pivot_wider(
-    names_from = c("stat", "feature"), values_from = value,
-    names_sep = "_") %>%
+deltas <- deltas %>%
+  # pivot_wider(
+  #   names_from = c("stat", "feature"), values_from = value,
+  #   names_sep = "_") %>%
     ungroup() %>% #skimr::skim()
     left_join(df_out) 
 toc() #1s
@@ -156,7 +159,7 @@ rm(out_temp)
 
 
 # load land use
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sampled_pixels_land_cover_4GPP.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/sampled_FFT_variables/sampled_pixels_delta_land_cover_GPP.RData')
 
 df_land <- dat %>% 
   left_join(prop_change_df)
@@ -174,32 +177,32 @@ df_land2 <- dat %>%
 
 df_land <- left_join(df_land, df_land2)
 
-df <- left_join(df, df_land)
+deltas <- left_join(deltas, df_land)
 
-save(df, file = "Results/210117_processed_reg_data_GPP.RData")
+save(deltas, file = "Results/210329_processed_reg_data_GPP.RData")
 ## clean up a bit
 rm(df_land, df_land2, out, prop_change_df, pxl_land_cover_change, sample)
 
 
 #### Data exploration to decide on variables ####
-df <- df %>% mutate(detected = !is.na(n_ews))
+deltas <- deltas %>% mutate(detected = n_ews != 0)
 
 
-df %>%
-  ggplot(aes(std_diff, temp_std_fast_oscillations)) +
+deltas %>%
+  ggplot(aes(delta_std, temp_std_fast_oscillations)) +
   geom_point(aes(color = biome), show.legend = FALSE, size = 0.1, alpha = .4) +
   facet_wrap(.~detected, ncol = 1)
 
 ## correlation matrix
-df %>% ungroup() %>%
-  select(std_diff, ac1_diff, kur_diff, skw_diff, fd_diff, detected) %>% 
+deltas %>% ungroup() %>%
+  select(starts_with("delta"), detected) %>% 
   #corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
   GGally::ggpairs(
     aes(fill = detected, color = detected),
     lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
 
 ## For rain, one could drop the slope (very little variability) and the mean_rain (high corr)
-df %>% select(prop_change, contains("prec"), mean_rain, detected) %>% 
+deltas %>% select(prop_change, contains("prec"), mean_rain, detected) %>% 
   # corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
   GGally::ggpairs(
     aes(fill = detected, color = detected),
@@ -208,7 +211,7 @@ df %>% select(prop_change, contains("prec"), mean_rain, detected) %>%
 ## For temperature, there is a lot of correlation, but the distributions are quite different
 ## between detected and non-detected. That can be accounted by biome (or lat, lon controls).
 ## The hypothesis is whether is slow change or stochastic processes, for T I think one should leave them all in.
-df %>% select(prop_change, contains("temp"), mean_temp, detected) %>% 
+deltas %>% select(prop_change, contains("temp"), mean_temp, detected) %>% 
   # corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
   GGally::ggpairs(
     aes(fill = detected, color = detected),
@@ -216,31 +219,33 @@ df %>% select(prop_change, contains("temp"), mean_temp, detected) %>%
 
 
 ## land use
-df %>% 
-  select(std_diff, detected, contains("lcc_")) %>% 
+deltas %>% 
+  select(delta_std, detected, contains("lcc_")) %>% 
   select(1,2,21:30) %>%
   # corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
   GGally::ggpairs(
     aes(fill = detected, color = detected),
     lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
 
-df %>% ggplot(aes(prop_change)) + 
+deltas %>% ggplot(aes(prop_change)) + 
   geom_density(aes(fill = detected), alpha = .3) + 
   scale_x_continuous(trans = "log1p") + 
   facet_wrap(~biome, scales = "free")
 
-df %>% 
-  ggplot(aes(ac1_diff, prop_change)) +
+deltas %>% 
+  ggplot(aes(delta_ac1, prop_change)) +
   geom_point(aes(color = biome, alpha = detected), show.legend = FALSE) +
   facet_wrap(~biome) 
 
 ## Rock and ice should be dropped, maybe inland water?
-df %>% 
-  ggplot(aes(y = std_diff, x = (temp_std_fast_oscillations))) +
-  geom_point(aes(color = n_ews), size = 0.5, alpha = 0.6) +
-  geom_smooth(aes(group = detected)) +
+deltas %>% 
+  ggplot(aes(y = sqrt(delta_fd), x = (temp_std_fast_oscillations))) +
+  geom_point(aes(color = detected), size = 0.5, alpha = 0.6) +
+  geom_smooth(aes(group = detected, color = detected)) +
   facet_wrap(~biome, scales = "free") +
   theme_light()
+
+## J210330: Because delta has a its important values at the tail of the distribution, I probably need to transform it. A good option is the sqrt, it seems to separate trends between detected and undetected on the plot above
 
 # 
 # df <- df %>%
