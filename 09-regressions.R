@@ -15,6 +15,7 @@ set.seed(777)
 
 # new analysis with deltas: deltas is a df with the delta and abruptness per statistic. 19Mb
 load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/210212_deltas_gpp_log.RData")
+load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/210301_delta_detected_GPP_log.RData")
 
 ## then the sample file used to extract the samples: this is pixels where ews were detected and pixels witout detection. The sampling is stratified with the same proportion per biome.
 sample <- read_csv(
@@ -189,11 +190,13 @@ deltas <- deltas %>% mutate(detected = n_ews != 0)
 
 
 deltas %>%
-  ggplot(aes(delta_std, temp_std_fast_oscillations)) +
-  geom_point(aes(color = biome), show.legend = FALSE, size = 0.1, alpha = .4) +
-  facet_wrap(.~detected, ncol = 1)
+  filter(n_ews == 0 | n_ews >1) %>% 
+  ggplot(aes(temp_std_fast_oscillations, abs(delta_std))) +
+  geom_point(aes(color = biome), show.legend = FALSE, size = 0.5, alpha = .4) +
+  geom_smooth() +
+  facet_wrap(biome~detected)
 
-## correlation matrix
+## correlation matrix for deltas of EWS
 deltas %>% ungroup() %>%
   select(starts_with("delta"), detected) %>% 
   #corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
@@ -201,8 +204,18 @@ deltas %>% ungroup() %>%
     aes(fill = detected, color = detected),
     lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
 
+## Note that you can use the absolute value to push all the distribution to positive numbers.
+## It seems symmetric without abs.
+deltas %>% 
+  filter(n_ews == 0 | n_ews > 2) %>% 
+  select(starts_with("delta"), detected) %>% 
+  pivot_longer(cols = starts_with("delta"), names_to = "stat", values_to = "value") %>% 
+  ggplot(aes(abs(value))) +
+  geom_density(aes(fill = detected), alpha = 0.5) +
+  facet_wrap(~stat, scales = "free")
+
 ## For rain, one could drop the slope (very little variability) and the mean_rain (high corr)
-deltas %>% select(prop_change, contains("prec"), mean_rain, detected) %>% 
+deltas %>% select(prop_change, contains("prec"), mean_rain, detected, delta_std) %>% 
   # corrgram(upper.panel = panel.pts, lower.panel = panel.pie)
   GGally::ggpairs(
     aes(fill = detected, color = detected),
@@ -217,8 +230,13 @@ deltas %>% select(prop_change, contains("temp"), mean_temp, detected) %>%
     aes(fill = detected, color = detected),
     lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
 
+deltas %>% 
+  ggplot(aes(temp_slope)) +
+  geom_boxplot(aes(fill = detected), alpha = .4) +
+  facet_wrap(~biome)
 
-## land use
+## land use: very little correlations, but the units are all over the place, needs rescaling. The original units are the number of pixels that changed per lc class between 2018 and 1994. Zero if no change, + if increased per class, - if decreased. Does the increase of a class (e.g. agriculture) predicts the EWS?
+## On the regression model, probably useful to have abs(delta) instead.
 deltas %>% 
   select(delta_std, detected, contains("lcc_")) %>% 
   select(1,2,21:30) %>%
@@ -227,6 +245,7 @@ deltas %>%
     aes(fill = detected, color = detected),
     lower = list(continuous = GGally::wrap("points", alpha = 0.15)))
 
+## prop_change has a long-tail distribution, very skewed, needs tranformation. maybe log1p or box-cox
 deltas %>% ggplot(aes(prop_change)) + 
   geom_density(aes(fill = detected), alpha = .3) + 
   scale_x_continuous(trans = "log1p") + 
@@ -239,14 +258,31 @@ deltas %>%
 
 ## Rock and ice should be dropped, maybe inland water?
 deltas %>% 
-  ggplot(aes(y = sqrt(delta_fd), x = (temp_std_fast_oscillations))) +
+  ggplot(aes(y = sqrt(delta_std), x = (temp_slope))) +
   geom_point(aes(color = detected), size = 0.5, alpha = 0.6) +
   geom_smooth(aes(group = detected, color = detected)) +
   facet_wrap(~biome, scales = "free") +
   theme_light()
 
+## pull appart the distributions by biome and metric
+deltas %>%
+  filter(ews_delta_std == TRUE & detected == TRUE | ews_delta_std == FALSE & detected == FALSE) %>%
+  ggplot(aes(temp_slope, prec_std_fast_oscillations)) +
+  geom_point(aes(color = detected), alpha = .3) +
+  #geom_smooth() +
+  facet_wrap(~biome)
+
+
 ## J210330: Because delta has a its important values at the tail of the distribution, I probably need to transform it. A good option is the sqrt, it seems to separate trends between detected and undetected on the plot above
 
+deltas <- deltas %>% 
+  mutate(across(.cols = starts_with("delta"), abs, .names = "abs_{.col}")) 
+
+deltas <- deltas %>% 
+  mutate(detected = as_factor(detected)) 
+
+deltas <- deltas %>%
+  left_join(df_delta_detected)
 # 
 # df <- df %>%
 #   filter(biome != "Rock and Ice") %>%
@@ -264,30 +300,32 @@ deltas %>%
 
 
 ## Data split
-data_split <- initial_split(df, strata = biome, prop = 3/4)
+data_split <- initial_split(
+  deltas %>% 
+    filter(n_ews == 0 | n_ews >1, biome == "Boreal Forests/Taiga"), 
+  strata = biome, prop = 3/4)
 train_data <- training(data_split)
 test_data <- testing(data_split)
 
 ## data-processing and feature engineering:
 ## land-use terms: lcc_10 + lcc_11 + lcc_12 + lcc_30 + lcc_40 + lcc_50 + lcc_160 + lcc_170 + lcc_190 + lcc_210 + lcc_20 + lcc_60 + lcc_70 + lcc_100 + lcc_110 + lcc_120 + lcc_121 + lcc_130 + lcc_61 + lcc_62 + lcc_153 + lcc_180 + lcc_150 + lcc_200 + lcc_122 + lcc_80 + lcc_90 +  lcc_202 + lcc_201 + lcc_152 + lcc_81 + lcc_71 + lcc_72 +
 
-
+#### Linear regression:####
 ews_rcp <- recipe(
-  std_diff ~ mean_temp + temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations + 
+  abs_delta_std ~ mean_temp + temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations + 
     prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations + 
     prop_change + biome, data = train_data) %>%
   step_filter(biome != "Rock and Ice") %>% 
+  #step_filter(n_ews == 0 | n_ews >1) %>% 
   step_dummy(biome) %>% 
-  #step_mutate(detected = as.numeric(detected)) %>% 
+  step_BoxCox(prop_change) %>% 
   step_zv(all_predictors()) %>%
-  step_normalize(all_numeric())
+  step_normalize(all_predictors())
 
 
 lm_model <- linear_reg() %>%
   set_engine("lm")
 
-
-  
 lm_workflow <- workflow() %>% 
   add_model(lm_model) %>% 
   add_recipe(ews_rcp)
@@ -306,10 +344,75 @@ keep_pred <- control_resamples(save_pred = TRUE)
 
 tic()
 fit_res <- lm_workflow %>% 
-  fit_resamples(resamples = folds, control = keep_pred)
+  fit_resamples(
+    resamples = folds, 
+    control = keep_pred)
 toc()
 
 collect_metrics(fit_res)
+
+# A tibble: 2 x 6
+# .metric .estimator   mean     n  std_err .config             
+# <chr>   <chr>       <dbl> <int>    <dbl> <chr>               
+# 1 rmse    standard   0.0679    10 0.000567 Preprocessor1_Model1
+# 2 rsq     standard   0.247     10 0.00949  Preprocessor1_Model1
+
+fit_res$.predictions %>% bind_rows() %>% 
+  ggplot(aes(.pred, abs_delta_std)) +
+  geom_point(size = .2, alpha = .3) +
+  geom_abline() +
+  coord_obs_pred()
+
+## Linear model has very low R^2 =0.2 and the RMSE is 0.88 meaning that the average error is 0.88 standard deviations (that's the units of the EWS), which is too high. Can a logistic approach do better?
+
+#### Logistic model ####
+ews_rcp <- recipe(
+  detected ~ mean_temp + temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations + 
+    prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations + 
+    prop_change + biome + lcc_10 + lcc_11 + lcc_12 + lcc_30 + lcc_40 + lcc_50 + lcc_160 + lcc_170 + lcc_190 + lcc_210 + lcc_20 + lcc_60 + lcc_70 + lcc_100 + lcc_110 + lcc_120 + lcc_121 + lcc_130 + lcc_61 + lcc_62 + lcc_153 + lcc_180 + lcc_150 + lcc_200 + lcc_122 + lcc_80 + lcc_90 +  lcc_202 + lcc_201 + lcc_152 + lcc_81 + lcc_71 + lcc_72 , data = train_data) %>%
+  step_filter(biome != "Rock and Ice") %>% 
+  step_dummy(biome) %>% 
+  step_BoxCox(prop_change, starts_with("lcc")) %>% 
+  step_zv(all_predictors()) %>%
+  step_normalize(all_numeric()) #%>%  step_downsample(detected)
+
+
+log_model <- logistic_reg() %>%
+  set_engine("glm")
+
+log_workflow <- workflow() %>% 
+  add_model(log_model) %>% 
+  add_recipe(ews_rcp)
+
+tic()
+log_fit <- fit(log_workflow, train_data)
+toc()
+
+pull_workflow_fit(log_fit) %>% broom::tidy() %>% 
+  mutate(p_value = ifelse(p.value > 0.05, "p > 0.05", ifelse(p.value <0.01, "p<0.01", "p<0.05"))) %>%
+  ggplot(aes(estimate, term)) +
+  geom_point(aes(shape = as_factor(p_value))) +
+  geom_errorbarh(aes(xmin = estimate - std.error, xmax = estimate + std.error))
+  
+
+folds <- vfold_cv(train_data, v=10)
+
+keep_pred <- control_resamples(save_pred = TRUE)
+
+tic()
+fit_res <- log_workflow %>% 
+  fit_resamples(
+    resamples = folds, 
+    control = keep_pred)
+toc()
+
+collect_metrics(fit_res) # accuracy 75.9%, roc_auc 0.68
+# roc_curve(fit_res$.predictions[[1]], truth = detected, .pred_class)
+
+fit_res
+
+#### Boosted trees? ####
+
 
 
 
