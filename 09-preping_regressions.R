@@ -157,7 +157,13 @@ rm(df_delta_detected, df_prec, df_temp, prop_change_df, pxl_land_cover_change, s
 save(deltas, file = "Results/regression_data_TER.RData")
 
 
-#### Viz
+#### Add fire data:
+load(file = "Results/regression_data_GPP.RData")
+load(file = "Results/fire.RData")
 
+deltas <- deltas %>% 
+    left_join(df)
 
+## update the file
+save(deltas, file = "Results/regression_data_GPP.RData")
 
