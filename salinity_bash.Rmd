@@ -1,0 +1,144 @@
+---
+title: "sea surface salinity"
+output: 
+  html_notebook:
+      theme:
+          code_font:
+            google: Fira Code
+---
+
+
+```{r setup}
+knitr::opts_knit$set(
+    root.dir = '/Users/juanrocha/Documents/Projects/DATA/ESA_ECV_ocean_salinity')
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  root.dir = '/Users/juanrocha/Documents/Projects/DATA/ESA_ECV_ocean_salinity')
+
+# 
+# julia <- JuliaCall::julia_setup(
+#   JULIA_HOME = "/Applications/Julia-1.1.app/Contents/Resources/julia/bin/",
+#   verbose = TRUE,
+#   installJulia = FALSE
+#   #rebuild = TRUE
+# )
+
+library(tidyverse)
+```
+
+
+
+```{r}
+fls <- fs::dir_ls(recurse = TRUE) %>%
+    str_subset( pattern = "nc$")
+```
+
+Now working. Remember to put `engine.opts='-l'` on the bash chunk.
+
+```{bash engine.opts='-l'}
+gdalinfo --version
+```
+
+```{bash engine.opts='-l'}
+cd 2019/01
+
+gdaltransform -s_srs EPSG:6933 -t_srs WGS84 ESACCI-SEASURFACESALINITY-L4-SSS-MERGED_OI_7DAY_RUNNINGMEAN_DAILY_25km-20190101-fv2.31.nc
+```
+
+
+
+```{bash engine.opts='-l'}
+# This is how to concatenate in bash but not useful now.
+# fl_type="NETCDF"
+# fl_var="sss"
+# echo $fl_type:$fl_var
+
+time (
+for file in *.nc ; do
+  gdal_edit.py -a_srs EPSG:6933 NETCDF:"$file" 
+done
+)
+
+```
+
+```{bash engine.opts='-l'}
+gdalbuildvrt -a_srs EPSG:6933 index.vrt *.nc
+```
+
+
+```{r}
+dat <- read_lines("test_files.txt")
+dat <- dat %>% map_chr(., function(x) paste("NETCDF:", "\"" ,x,"\"", ":sss", sep = ""))
+write_lines(dat, file = "test_files.txt")
+```
+
+```{bash engine.opts='-l'}
+cat test_files.txt
+
+```
+
+
+```{bash engine.opts='-l'}
+# create a virtual dataset
+gdalbuildvrt -input_file_list test_files.txt cube.vrt
+```
+
+```{bash engine.opts='-l'}
+gdalinfo NETCDF:"ESACCI-SEASURFACESALINITY-L4-SSS-MERGED_OI_7DAY_RUNNINGMEAN_DAILY_25km-20190101-fv2.31.nc":sss
+#gdallocationinfo ESACCI-SEASURFACESALINITY-L4-SSS-MERGED_OI_7DAY_RUNNINGMEAN_DAILY_25km-20190101-fv2.31.nc 350 350
+```
+```{bash engine.opts='-l'}
+
+gdallocationinfo -valonly NETCDF:"ESACCI-SEASURFACESALINITY-L4-SSS-MERGED_OI_7DAY_RUNNINGMEAN_DAILY_25km-20190101-fv2.31.nc":sss 350 350
+
+```
+
+## From `Julia`
+
+
+Set up `Julia`:
+
+```{julia}
+using Pkg
+Pkg.activate(".")
+Pkg.add("RCall")
+Pkg.add(PackageSpec(url="https://github.com/esa-esdl/ESDL.jl"))
+Pkg.add(PackageSpec(url="https://github.com/esa-esdl/ESDLPlots.jl"))
+Pkg.add("ColorSchemes");
+Pkg.add("Plots");
+Pkg.add("Statistics")
+Pkg.add("NetCDF")
+
+# ESDL tools only works with zarr files, off for now.
+using NetCDF, RCall, Plots, ColorSchemes;
+```
+
+Set working directory in the folder with the salinity data:
+```{julia}
+
+cd("/Users/juanrocha/Documents/Projects/DATA/ESA_ECV_ocean_salinity/2019/01")
+pwd()
+fls = readdir(); # read files
+```
+
+```{julia}
+@time dat = ncread(fls[1], "sss");
+```
+
+```{bash engine.opts='-l', comment=NA}
+## for reproducibility, record teh enviroment.
+conda env export > environment.yaml
+```
+
+
+
+
+
+```{bash engine.opts='-l'}
+cd
+cd ..
+cd ..
+pwd
+/anaconda3/bin/activate base
+```

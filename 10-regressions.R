@@ -7,8 +7,8 @@ set.seed(123415)
 
 # load data:
 # load("Results/regression_data_GPP.RData")
-load("Results/regression_data_TER.RData")
-# load("Results/regression_data_chlorA.RData")
+# load("Results/regression_data_TER.RData")
+ load("Results/regression_data_chlorA.RData")
 ### Explorations from draft analysis -- to clean up ###
 
 
@@ -44,7 +44,7 @@ g <- deltas %>% ungroup() %>%
 g
 
 ggsave(plot = g, 
-       filename = "figures/SM_fig_TER.png", 
+       filename = "figures/SM_fig_clorA.png", 
        device = "png", dpi = 300,
        width = 4, height = 3.5, units = "in")
 
@@ -100,6 +100,11 @@ deltas %>%
     geom_point(aes(color = biome, alpha = detected), show.legend = FALSE) +
     facet_wrap(~biome)
 
+## fires:
+deltas %>% ggplot(aes(detected, log1p(burn_area))) + 
+  geom_boxplot() +
+  facet_wrap(~biome)
+
 ## Rock and ice should be dropped, maybe inland water?
 deltas %>%
     ggplot(aes(y = abs(delta_std), x = (temp_slope))) +
@@ -137,9 +142,10 @@ test_data <- testing(data_split)
 ## #### Linear regression:####
 lm_rcp <- recipe(
     delta_std ~ temp_mean + temp_slope + temp_var + prec_mean + prec_slope +
-        prec_var + prop_change + biome,
+        prec_var + prop_change + biome + burn_area,
     data = train_data) %>%
     step_filter(biome != "Rock and Ice") %>%
+    step_log(burn_area ,signed = TRUE) %>% 
     #step_filter(n_ews == 0 | n_ews >1) %>%
     #step_rm(contains("var")) %>%
     step_dummy(biome) %>%
@@ -193,9 +199,10 @@ log_rcp <- recipe(
         prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations + temp_slope + 
         prec_slope + temp_mean + prec_mean + prop_change  +  lcc_10 + lcc_11 + lcc_30 + 
         lcc_40 + lcc_61 +  lcc_71 +  lcc_80 +  lcc_100 +  lcc_130 +  lcc_190 + lcc_200 + lcc_202 +
-    biome ,
+      burn_area + biome ,
     data = train_data) %>%
     step_filter(biome != "Rock and Ice") %>%
+    step_log(burn_area, signed = TRUE) %>% 
     #step_rm(contains("var")) %>%
     step_dummy(biome) %>%
     step_BoxCox(prop_change, starts_with("lcc")) %>%  #
@@ -229,7 +236,7 @@ g1 <- reg_df %>%
     mutate(p_value = as_factor(p_value) %>% 
                fct_relevel(., levels = c("p<0.01", "p<0.05", "p > 0.05"))) %>% 
     mutate(type = case_when(
-        str_detect(term, "temp_|prec_") ~ "Climate",
+        str_detect(term, "temp_|prec_|burn_") ~ "Climate",
         str_detect(term, "lcc_|prop_change") ~ "Land cover class",
         str_detect(term, "biome") ~ "Biomes",
         str_detect(term, "Intercept") ~ ".")) %>% 
@@ -245,7 +252,8 @@ g1 <- reg_df %>%
            term = str_replace(term, "lcc_130", "Grassland"),
            term = str_replace(term, "lcc_11", "Rainfed herbaceous crops"),
            term = str_replace(term, "lcc_100", "Mosaic tree and shrub (>50%) / herbaceous cover (<50%)"),
-           term = str_replace(term, "lcc_10", "Rainfed shrub crops, tree crops, herbaceous crops")
+           term = str_replace(term, "lcc_10", "Rainfed shrub crops, tree crops, herbaceous crops"),
+           term = str_replace(term, "burn_area", "Burned area")
            ) %>% 
     ggplot(aes(estimate, term)) +
     geom_point(aes(color = p_value), size = 0.5) +
@@ -281,6 +289,7 @@ collect_metrics(log_res) # accuracy 75.9%, roc_auc 0.68
 # accuracy 0.67, roc_auc 0.73 with lcc
 # accuracy 0.67, roc_auc 0.725 without lcc but with all the correlated climate variables
 # accuracy 0.65, roc_auc 0.704 only with temp_mean + temp_slope + temp_var + prec_mean + prec_slope + prec_var + prop_change + biome
+# accuracy 0.612, roc_auc 0.646 with burn area
 
 log_fit$fit$fit
 
@@ -293,9 +302,10 @@ log_auc <- log_res %>%
 # Random forest does not need a lot of pre-processing and allow variables in their natural units
 rf_rcp <-  recipe(
     detected ~ temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations + prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations + temp_slope + prec_slope + temp_mean + prec_mean + prop_change  +  lcc_10 + lcc_11 + lcc_30 + lcc_40 + lcc_61 +  lcc_71 +  lcc_80 +  lcc_100 +  lcc_130 +  lcc_190 + lcc_200 + lcc_202 +
-    biome ,
+    burn_area + biome ,
     data = train_data) %>%
     step_filter(biome != "Rock and Ice") %>%
+    #step_log(burn_area, signed = TRUE) %>% 
     #step_rm(contains("var")) %>%
     step_dummy(biome) %>%
     #step_BoxCox(prop_change) %>%  #, starts_with("lcc")
@@ -304,7 +314,7 @@ rf_rcp <-  recipe(
     #step_interact(terms = ~ prec_var:temp_var) %>%
     themis::step_downsample(detected)
 
-rf_model <- rand_forest() %>% #mtry = tune(), min_n = tune(), trees = 1000
+rf_model <- rand_forest(mtry = tune(), min_n = tune(), trees = 1000) %>% 
     set_mode("classification") %>%
     set_engine("ranger", importance = "impurity")
 
@@ -337,8 +347,11 @@ collect_metrics(rf_res)
 
 # accuracy 0.78, with lcc 81
 # roc_auc 0.86, with lcc 88
+# accuracy 0.794, roc 0.876 with fire
 
-imp_df <- vip::vi(rf_fit$fit$fit)
+imp_df <- vip::vi(
+  rf_fit$fit$fit, method = "firm", ice = TRUE, 
+  train = rf_fit$pre$mold$predictors)
 
 imp_df %>%
     ggplot(aes(Variable, Importance)) +

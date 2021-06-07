@@ -3,6 +3,7 @@ library(tictoc)
 library(rworldmap)
 library(sf)
 library(patchwork)
+library(tidymodels)
 # library(cleangeo)
 data("coastsCoarse")
 
@@ -25,6 +26,9 @@ load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/210301_delta_detected_
 load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/210212_deltas_chlorA_log.RData") #19Mb
 load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/210301_delta_detected_ChlorA_log.RData")
 
+# dataset with biomes:
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/terrestrial_biomes.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/marine_biomes.RData')
 
 ls()
 
@@ -80,9 +84,9 @@ df_affected <- dat %>%
   summarise(affected_area = n())
 
 df_affected <- df_affected %>%
-  left_join((dat %>% group_by(biome) %>% summarize(n = n())))
+  #left_join((dat %>% group_by(biome) %>% summarize(n = n())))
   #when marine:
-  #left_join((df_marine %>% group_by(biome) %>% summarize(n = n())))
+  left_join((df_marine %>% group_by(biome) %>% summarize(n = n())))
 
 g2 <- df_affected %>%
   mutate(proportion = affected_area / n) %>%
@@ -153,7 +157,7 @@ ggsave(
 
 
 #### Marine figures: slightly different arrangement ####
-g1 <- dat %>%
+g0 <- dat %>%
   ggplot(aes(lon,lat)) +
   geom_tile(aes(fill = biome, alpha = detected)) +
   geom_path(aes(long,lat, group = group), data = coastsCoarse, size=0.1) +
@@ -163,7 +167,8 @@ g1 <- dat %>%
     fill = "none",
     alpha = guide_legend(ncol = 2, title.position = "left")
   ) +
-  theme_void(base_size = 6) + labs(tag = "C") + ylim(c(-60,NA)) +
+  theme_void(base_size = 6) +#labs(tag = "C") + 
+  ylim(c(-60,NA)) +
   theme(
     legend.position = c(0.75,0.1),
     legend.direction = "horizontal",
@@ -172,13 +177,19 @@ g1 <- dat %>%
     legend.key.size = unit(0.15, "cm"),
     legend.text = element_text(size = 5),
     plot.background = element_rect(fill = "white")
-  )
+  ) +
+  annotation_custom(
+    grob = ggplotGrob(g2),
+    xmin = -40, ymin = 52, xmax = 80, ymax = 90) +
+  annotation_custom(
+    grob = ggplotGrob(g3),
+    xmin = 80, ymin = 52, xmax = 175, ymax = 90)
 
 g2 <- df_affected %>%
   mutate(proportion = affected_area / n) %>%
   ggplot(aes(fct_rev(biome), proportion)) +
   geom_col(aes(fill = biome), alpha = 0.75, show.legend = FALSE) +
-  labs(tag = "A", y = "Proportion of area", x = "Marine rehalms") +
+  labs(y = "Proportion of area", x = "Marine rehalms") +
   scale_y_continuous(labels = scales::percent) +
   coord_flip() +
   theme_light(base_size = 6) #+ theme(axis.text.y = element_blank())
@@ -193,18 +204,15 @@ g3 <- dat %>%
   coord_flip() +
   scale_alpha_discrete("Signals",range = c(0.5,1)) +
   #scale_y_log10() +
-  labs(tag = "B", y = "Area in pixels", x = "Marine rehalms") +
+  labs(y = "Area in pixels", x = "Marine rehalms") +
   theme_light(base_size = 6) +
   theme(
-    legend.position = "right",
+    legend.position = c(0.8, 0.3),
     #legend.direction = "vertical",
     #legend.box = "vertical", legend.title.align = 0.5,
     #legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt"),
     axis.text.y = element_blank(),
-    legend.text = element_text(size = 5)) +
-  annotation_custom(
-    grob = ggplotGrob(g1),
-    xmin = 0.5, ymin = 10000, xmax = 12, ymax = 63000)
+    legend.text = element_text(size = 5)) 
 
 
 
@@ -217,7 +225,7 @@ ggsave(
   filename = "fig_detection_marine.png",
   path = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/paper/figures/",
   device = "png",
-  width = 7, height = 4, dpi = 320
+  width = 7, height = 5, dpi = 320
 )
 
 #### Time coherence ####
@@ -330,6 +338,69 @@ px_all %>%
     lower = list(continuous = GGally::wrap("points", alpha = 0.05)),
     diag = list(continuous = GGally::wrap("densityDiag", alpha = 0.2)))
 
+#### Regression results ####
+
+load("Results/210529_rf_GPP.RData")
+
+# load data:
+load("Results/regression_data_GPP.RData")
+#load("Results/regression_data_TER.RData")
+# load("Results/regression_data_chlorA.RData")
+
+deltas <- deltas %>% mutate(detected = n_ews != 0) %>%
+  mutate(across(.cols = starts_with("delta"), abs, .names = "abs_{.col}")) %>%
+  mutate(detected = as_factor(detected),
+         detected = fct_relevel(detected, "TRUE", "FALSE")) %>%
+  mutate(biome = fct_explicit_na(biome))
+
+
+## Data split
+data_split <- initial_split(
+  deltas %>% filter(n_ews == 0 | n_ews >1), #, biome == "Boreal Forests/Taiga"
+  strata = detected, prop = 3/4)
+train_data <- training(data_split)
+test_data <- testing(data_split)
+
+## load the recipe
+rf_rcp <-  recipe(
+  detected ~ temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations + prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations + temp_slope + prec_slope + temp_mean + prec_mean + prop_change  +  lcc_10 + lcc_11 + lcc_30 + lcc_40 + lcc_61 +  lcc_71 +  lcc_80 +  lcc_100 +  lcc_130 +  lcc_190 + lcc_200 + lcc_202 +
+    burn_area + biome ,
+  data = train_data) %>%
+  step_filter(biome != "Rock and Ice") %>%
+  #step_log(burn_area, signed = TRUE) %>% 
+  #step_rm(contains("var")) %>%
+  step_dummy(biome) %>%
+  #step_BoxCox(prop_change) %>%  #, starts_with("lcc")
+  #step_zv(all_predictors()) %>%
+  #step_normalize(all_numeric()) %>%
+  #step_interact(terms = ~ prec_var:temp_var) %>%
+  themis::step_downsample(detected)
+
+rf_res %>% 
+  collect_metrics() %>% 
+  filter(.metric == "roc_auc") %>% 
+  select(mean, min_n, mtry) %>% 
+  pivot_longer(cols = min_n:mtry, names_to = "tune_parm", values_to = "value") %>% 
+  ggplot(aes(value, mean)) + 
+  geom_point(aes(color = tune_parm)) +
+  facet_wrap(~tune_parm, scales = "free_x")
+
+regular_res %>% 
+  collect_metrics() %>% 
+  filter(.metric == "roc_auc") %>% 
+  mutate(min_n = factor(min_n)) %>% 
+  ggplot(aes(mtry, mean, color = min_n)) +
+  geom_line() +
+  geom_point()
+
+final_fit %>% 
+  collect_predictions() %>% 
+  mutate(correct = case_when(
+    detected == .pred_class ~ "correct", TRUE ~ "incorrect"
+  )) %>% 
+  bind_cols(test_data) %>% 
+  ggplot(aes(lon, lat, fill  = correct)) +
+  geom_tile()
 
 
 #### Supplementary material ####

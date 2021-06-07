@@ -5,7 +5,7 @@ library(rworldmap)
 data("coastsCoarse")
 
 # load results:
-load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201029_summary_terrestrial_ecosystem_respiration_log.RData')
+load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201024_summary_chlorA_log.RData')
 
 # dataset with biomes:
 load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/terrestrial_biomes.RData')
@@ -204,9 +204,9 @@ df_affected <- df_ews %>%
   summarise(affected_area = n())
 
 df_affected <- df_affected %>%
-  left_join((df_biomes %>% group_by(biome) %>% summarize(n = n())))
+  #left_join((df_biomes %>% group_by(biome) %>% summarize(n = n())))
   #when marine:
-  #left_join((df_marine %>% group_by(biome) %>% summarize(n = n())))
+  left_join((df_marine %>% group_by(biome) %>% summarize(n = n())))
 
 ## correct the NA's induced in the unclassified biomes:
 df_affected$n[is.na(df_affected$n)] <- df %>% filter(stat == "std", feature == "diff", biome_code == 100) %>% nrow()
