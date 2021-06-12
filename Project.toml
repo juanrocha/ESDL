@@ -1,0 +1,11 @@
+[deps]
+ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+ESDL = "359177bc-a543-11e8-11b7-bb015dba3358"
+ESDLPlots = "d555b242-3f29-57aa-84ea-3df92a135dfd"
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+NetCDF = "30363a11-5582-574a-97bb-aa9a979735b9"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
+RCall = "6f49c342-dc21-5d91-9882-a32aef131414"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"

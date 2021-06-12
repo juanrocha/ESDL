@@ -456,9 +456,9 @@ pls_rcp <- recipe(
   #step_interact(terms = ~ prec_var:temp_var) %>%
   # themis::step_downsample(detected)
 
-pls_model <- pls(num_comp = 2, predictor_prop = 0.2) %>%
+pls_model <- plsmod::pls(num_comp = 2, predictor_prop = 1) %>%
   set_engine("mixOmics") %>% 
-  set_mode("regression")
+  set_mode("classification")
 
 pls_workflow <- workflow() %>%
   add_model(pls_model) %>%
@@ -486,7 +486,7 @@ toc() # 12s
 collect_metrics(pls_res)
 ## rmse 0.98, rsq 0.02: doesn't work at all.
 
-
+pls_fit %>% tidy()
 
 
 #### Marine regressions ####
