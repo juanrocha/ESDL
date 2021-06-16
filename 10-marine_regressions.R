@@ -22,7 +22,8 @@ g <- deltas %>% ungroup() %>%
     GGally::ggpairs(
         aes(fill = detected, color = detected),
         lower = list(continuous = GGally::wrap("points", alpha = 0.15)),
-        upper = list(continuous = GGally::wrap(GGally::ggally_cor, display_grid = FALSE, size = 1.5)),
+        upper = list(continuous = GGally::wrap(GGally::ggally_cor, 
+                                               display_grid = FALSE, size = 1.5)),
         diag = list(continuous = GGally::wrap("densityDiag", alpha = 0.25)),
         columnLabels = c("Autocorrelation", "Fractal dimension", "Kurtosis", "Skewness", "Standard deviation", "Detected")) +
     scale_color_brewer(palette = "Set1", direction = -1) + 

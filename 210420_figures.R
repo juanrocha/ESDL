@@ -76,7 +76,7 @@ dat %>%
     legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt")
   )
 
-#### Figure 1 ####
+#### Figure 1 & 2####
 
 df_affected <- dat %>%
   filter(detected == TRUE) %>%
@@ -156,7 +156,7 @@ ggsave(
 )
 
 
-#### Marine figures: slightly different arrangement ####
+#### Figure 3: Marine realms ####
 g0 <- dat %>%
   ggplot(aes(lon,lat)) +
   geom_tile(aes(fill = biome, alpha = detected)) +
@@ -339,13 +339,17 @@ px_all %>%
     diag = list(continuous = GGally::wrap("densityDiag", alpha = 0.2)))
 
 #### Regression results ####
+## Terrestrial ecosystems
 
-load("Results/210529_rf_GPP.RData")
 
 # load data:
 load("Results/regression_data_GPP.RData")
-#load("Results/regression_data_TER.RData")
-# load("Results/regression_data_chlorA.RData")
+load("Results/regression_data_TER.RData")
+
+load("Results/210529_rf_GPP.RData")
+load("Results/210526_rf_TER.RData")
+
+
 
 deltas <- deltas %>% mutate(detected = n_ews != 0) %>%
   mutate(across(.cols = starts_with("delta"), abs, .names = "abs_{.col}")) %>%
@@ -354,9 +358,11 @@ deltas <- deltas %>% mutate(detected = n_ews != 0) %>%
   mutate(biome = fct_explicit_na(biome))
 
 
+
+
 ## Data split
 data_split <- initial_split(
-  deltas %>% filter(n_ews == 0 | n_ews >1), #, biome == "Boreal Forests/Taiga"
+  deltas %>% filter(n_ews == 0 | n_ews >1),
   strata = detected, prop = 3/4)
 train_data <- training(data_split)
 test_data <- testing(data_split)
@@ -375,6 +381,14 @@ rf_rcp <-  recipe(
   #step_normalize(all_numeric()) %>%
   #step_interact(terms = ~ prec_var:temp_var) %>%
   themis::step_downsample(detected)
+
+rf_prep <- prep(rf_rcp)
+juiced <- juice(rf_prep)
+
+## model specification
+rf_model <- rand_forest(mtry = tune(), min_n = tune(), trees = 1000) %>% 
+  set_mode("classification") %>%
+  set_engine("ranger") 
 
 rf_res %>% 
   collect_metrics() %>% 
@@ -400,8 +414,445 @@ final_fit %>%
   )) %>% 
   bind_cols(test_data) %>% 
   ggplot(aes(lon, lat, fill  = correct)) +
-  geom_tile()
+  geom_tile() +
+  theme_void()
 
+best_mod <- select_best(regular_res)
+
+regular_res %>% collect_metrics() %>% arrange(desc(mean))
+
+rf_final <- finalize_model(
+  rf_model,
+  best_mod
+)
+
+rf_workflow <- workflow() %>%
+  add_recipe(rf_rcp) %>%
+  add_model(rf_model) 
+
+## extracting the dataset for plotting.
+tic()
+df_rf2 <- rf_final %>%
+  set_engine("ranger", importance = "permutation") %>%
+  fit(detected ~ .,
+      data = juice(rf_prep)) 
+toc() # ~ 5mins
+
+df_gpp <- tibble(
+  variable = names(df_rf1$fit$variable.importance),
+  importance = df_rf1$fit$variable.importance, 
+  response = "Gross Primary Productivity")
+
+
+df_ter <- tibble(
+  variable = names(df_rf2$fit$variable.importance),
+  importance = df_rf2$fit$variable.importance, 
+  response = "Terrestrial Ecosystem Respiration")
+
+g2 <- bind_rows(df_gpp, df_ter) %>% 
+  rename(term = variable) %>%
+  mutate(type = case_when(
+    str_detect(term, "temp_|prec_|burn_") ~ "Climate",
+    str_detect(term, "lcc_|prop_change") ~ "Land cover",
+    str_detect(term, "biome") ~ "Biomes",
+    str_detect(term, "Intercept|lon|lat") ~ ".")) %>% 
+  mutate(term = str_remove_all(term, "biome_"), 
+         term = str_replace(term, "lcc_80", "Needleleaved deciduous closed to open trees"),
+         term = str_replace(term, "lcc_71", "Needleleaved evergreen closed to open trees (100-40%)"),
+         term = str_replace(term, "lcc_61", "Broadleaved evergreen closed to open trees (100-40%)"),
+         term = str_replace(term, "lcc_40", "Natural and semi-natural primarily terrestrial vegetation"),
+         term = str_replace(term, "lcc_30", "Cultivated and managed terrestrial areas"),
+         term = str_replace(term, "lcc_202", "Unconsolidated bare areas"),
+         term = str_replace(term, "lcc_200", "Bare areas"),
+         term = str_replace(term, "lcc_190", "Urban areas"),
+         term = str_replace(term, "lcc_130", "Grassland"),
+         term = str_replace(term, "lcc_11", "Rainfed herbaceous crops"),
+         term = str_replace(term, "lcc_100", "Mosaic tree and shrub (>50%) / herbaceous cover (<50%)"),
+         term = str_replace(term, "lcc_10", "Rainfed shrub crops, tree crops, herbaceous crops"),
+         term = str_replace(term, "X.Missing", "Missing value"), 
+         term = str_replace(term, "temp_std_longterm", "Temperature: long term variation (std)"),
+         term = str_replace(term, "temp_std_fast_oscillations", "Temperature: fast oscillations (std)"),
+         term = str_replace(term, "temp_std_annual_cycle", "Temperature: annual cycle (std)"),
+         term = str_replace(term, "temp_slope", "Temperature: slope of linear trend"),
+         term = str_replace(term, "temp_mean", "Temperature: mean"),
+         term = str_replace(term, "prec_std_longterm", "Precipitation: long term variation (std)"),
+         term = str_replace(term, "prec_std_fast_oscillations", "Precipitation: fast oscillations (std)"),
+         term = str_replace(term, "prec_std_annual_cycle", "Precipitation: annual cycle (std)"),
+         term = str_replace(term, "prec_slope", "Precipitation: slope of linear trend"),
+         term = str_replace(term, "prec_mean", "Precipitation: mean"),
+         term = str_replace(term, "prop_change", "Proportion of land cover change"),
+         term = str_replace(term, "lon$", "Longitud"),
+         term = str_replace(term, "lat$", "Latitude"),
+         term = str_replace_all(term, "\\.", " "),
+         term = str_replace_all(term, "_", " "), 
+         term = str_trim(term, "both"), 
+         term = str_replace_all(term, "  ", " "),
+         term = str_to_sentence(term)
+  ) %>% 
+  group_by(response) %>% 
+  top_n(10, importance) %>% 
+  mutate(term = as_factor(term) %>% fct_reorder(., importance, mean)) %>% 
+  ggplot(aes(importance, term)) +
+  geom_col() + 
+  facet_wrap(response~., scales = "free", nrow = 2) +
+  labs(x = "Importance (permutation)",
+       y = "Random forest strongest predictors", tag = "B") +
+  theme_light(base_size = 6) +
+  theme(legend.position = "top") 
+
+g1 + g2 + plot_layout(widths = c(2,1))
+
+ggsave(filename = "figures/fig_regressions_terrestrial.png", plot = last_plot(),
+       device = "png", dpi = 300,
+       width = 7, height = 4, units = "in")
+
+### Logistic regression:
+## Workflow: run the code for GPP first, then for TER, combine the datasets and produce one summarizing figure
+
+log_rcp <- recipe(
+  detected ~ temp_std_longterm + temp_std_annual_cycle + temp_std_fast_oscillations + 
+    prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations + temp_slope + 
+    prec_slope + temp_mean + prec_mean + prop_change  +  lcc_10 + lcc_11 + lcc_30 + 
+    lcc_40 + lcc_61 +  lcc_71 +  lcc_80 +  lcc_100 +  lcc_130 +  lcc_190 + lcc_200 + lcc_202 +
+    burn_area + biome + lon + lat,
+  data = train_data) %>%
+  step_filter(biome != "Rock and Ice") %>%
+  step_log(burn_area, signed = TRUE) %>% 
+  #step_rm(contains("var")) %>%
+  step_dummy(biome) %>%
+  step_BoxCox(prop_change, starts_with("lcc")) %>%  #
+  step_zv(all_predictors()) %>%
+  step_normalize(all_numeric()) %>%
+  #step_interact(terms = ~ prec_var:temp_var) %>%
+  themis::step_downsample(detected)
+
+## Interpretation note: In the help(step_downsample) is explained that the downsampling is meant to be done only during training. 
+
+## Interactions do not improve fit
+
+log_model <- logistic_reg() %>%
+  set_engine("glm", family = "binomial")
+
+log_workflow <- workflow() %>%
+  add_model(log_model) %>%
+  add_recipe(log_rcp)
+
+tic()
+log_fit <- fit(log_workflow, train_data)
+toc()
+
+tic()
+reg_df <- pull_workflow_fit(log_fit) %>% 
+  broom::tidy(conf.int = TRUE, exponentiate = TRUE) 
+toc() # 62sec
+
+
+folds <- vfold_cv(train_data, v=10)
+
+keep_pred <- control_resamples(save_pred = TRUE)
+
+
+tic()
+log_res <- log_workflow %>%
+  fit_resamples(
+    resamples = folds,
+    control = keep_pred)
+toc() # 12s
+
+collect_metrics(log_res) # accuracy 75.9%, roc_auc 0.68
+# roc_curve(fit_res$.predictions[[1]], truth = detected, .pred_class)
+# the model is not good, and is not improved by lcc.
+# accuracy 0.67, roc_auc 0.73 with lcc
+# accuracy 0.67, roc_auc 0.725 without lcc but with all the correlated climate variables
+# accuracy 0.65, roc_auc 0.704 only with temp_mean + temp_slope + temp_var + prec_mean + prec_slope + prec_var + prop_change + biome
+# accuracy 0.612, roc_auc 0.646 with burn area
+# 
+# Notes for writing: roc_auc 0.714, accuracy 0.648 for GPP, 0.655 and 0.617 for TER
+
+log_fit$fit$fit
+
+# use df2 or df3 depending if GPP or TER respectively
+reg_df3 <- pull_workflow_fit(log_fit)  %>% 
+  broom::tidy(conf.int = TRUE, exponentiate = TRUE) 
+
+log_auc <- log_res %>%
+  collect_predictions() %>%
+  roc_curve(detected, .pred_TRUE) %>%
+  autoplot()
+
+# once you've run the regression twice, merge the two datasets
+df_reg <- bind_rows(
+  reg_df2 %>% mutate(response = "Gross Primary Productivity"),
+  reg_df3 %>% mutate(response = "Terrestrial Ecosystem Respiration")
+)
+
+g1 <- df_reg %>%
+  mutate(p_value = ifelse(p.value > 0.05, "p>0.05", ifelse(p.value <0.01, "p<0.01", "p<0.05"))) %>%  #pull(p_value) %>% unique()
+  mutate(p_value = as_factor(p_value) %>% 
+         fct_relevel(., "p<0.01", "p<0.05", "p>0.05")  ) %>%  
+  mutate(type = case_when(
+    str_detect(term, "temp_|prec_|burn_") ~ "Climate",
+    str_detect(term, "lcc_|prop_change") ~ "Land cover",
+    str_detect(term, "biome") ~ "Biomes",
+    str_detect(term, "Intercept|lon|lat") ~ ".")) %>% 
+  mutate(term = str_remove_all(term, "biome_"), 
+         term = str_replace(term, "lcc_80", "Needleleaved deciduous closed to open trees"),
+         term = str_replace(term, "lcc_71", "Needleleaved evergreen closed to open trees (100-40%)"),
+         term = str_replace(term, "lcc_61", "Broadleaved evergreen closed to open trees (100-40%)"),
+         term = str_replace(term, "lcc_40", "Natural and semi-natural primarily terrestrial vegetation"),
+         term = str_replace(term, "lcc_30", "Cultivated and managed terrestrial areas"),
+         term = str_replace(term, "lcc_202", "Unconsolidated bare areas"),
+         term = str_replace(term, "lcc_200", "Bare areas"),
+         term = str_replace(term, "lcc_190", "Urban areas"),
+         term = str_replace(term, "lcc_130", "Grassland"),
+         term = str_replace(term, "lcc_11", "Rainfed herbaceous crops"),
+         term = str_replace(term, "lcc_100", "Mosaic tree and shrub (>50%) / herbaceous cover (<50%)"),
+         term = str_replace(term, "lcc_10", "Rainfed shrub crops, tree crops, herbaceous crops"),
+         term = str_replace(term, "X.Missing", "Missing value"), 
+         term = str_replace(term, "temp_std_longterm", "Temperature: long term variation (std)"),
+         term = str_replace(term, "temp_std_fast_oscillations", "Temperature: fast oscillations (std)"),
+         term = str_replace(term, "temp_std_annual_cycle", "Temperature: annual cycle (std)"),
+         term = str_replace(term, "temp_slope", "Temperature: slope of linear trend"),
+         term = str_replace(term, "temp_mean", "Temperature: mean"),
+         term = str_replace(term, "prec_std_longterm", "Precipitation: long term variation (std)"),
+         term = str_replace(term, "prec_std_fast_oscillations", "Precipitation: fast oscillations (std)"),
+         term = str_replace(term, "prec_std_annual_cycle", "Precipitation: annual cycle (std)"),
+         term = str_replace(term, "prec_slope", "Precipitation: slope of linear trend"),
+         term = str_replace(term, "prec_mean", "Precipitation: mean"),
+         term = str_replace(term, "prop_change", "Proportion of land cover change"),
+         term = str_replace(term, "lon$", "Longitud"),
+         term = str_replace(term, "lat$", "Latitude"),
+         term = str_replace_all(term, "\\.", " "),
+         term = str_replace_all(term, "_", " "), 
+         term = str_trim(term, "both"), 
+         term = str_replace_all(term, "  ", " "),
+         term = str_to_sentence(term)
+  ) %>% 
+  ggplot(aes(estimate, term)) +
+  geom_point(aes(color = p_value), size = 0.5) +
+  geom_errorbarh(
+    aes(xmin = conf.low, xmax = conf.high, color = p_value), size = 0.25) +
+  geom_vline(xintercept = 1, size = 0.3) + 
+  facet_grid(type~response, scales = "free", space = "free_y", switch = "y") +
+  scale_color_manual("", values = c("#6a3d9a", "#ff7f00", "#a6cee3")) +
+  labs(x = "Odds of detecting symptoms of resilience loss",
+       y = "Explanatory variables", tag = "A") +
+  theme_light(base_size = 6) +
+  theme(legend.position = "top") 
+
+g1
+
+ggsave(filename = "figures/fig_regression_terrestrial.png", plot = g1,
+       device = "png", dpi = 300,
+       width = 4.5, height = 4, units = "in")
+
+### Marine ecosystems
+load("Results/210608_rf_chlorA.RData")
+load("Results/regression_data_chlorA.RData")
+
+
+
+## Logistic regression:
+#### Data exploration to decide on variables ####
+deltas <- deltas %>% mutate(detected = n_ews != 0) %>%
+  mutate(across(.cols = starts_with("delta"), abs, .names = "abs_{.col}")) %>%
+  mutate(detected = as_factor(detected),
+         detected = fct_relevel(detected, "TRUE", "FALSE")) %>%
+  mutate(biome = fct_explicit_na(biome))
+
+
+
+## Data split
+data_split <- initial_split(
+  deltas %>% filter(n_ews == 0 | n_ews >1),
+  strata = detected, prop = 3/4)
+train_data <- training(data_split)
+test_data <- testing(data_split)
+
+
+log_rcp <- recipe(
+  detected ~ temp_std_longterm + temp_std_annual_cycle + 
+    temp_std_fast_oscillations + temp_slope + temp_mean +
+    sss_std_longterm + sss_std_annual_cycle + sss_std_fast_oscillations +  
+    sss_slope +  sss_mean + biome + lon + lat,
+  data = train_data) %>%
+  step_dummy(biome) %>%
+  step_zv(all_predictors()) %>%
+  step_normalize(all_numeric()) %>%
+  #step_interact(terms = ~ sss_mean:temp_mean) %>%
+  themis::step_downsample(detected)
+
+log_model <- logistic_reg() %>%
+  set_engine("glm", family = "binomial")
+
+log_workflow <- workflow() %>%
+  add_model(log_model) %>%
+  add_recipe(log_rcp)
+
+tic()
+log_fit <- fit(log_workflow, train_data)
+toc() #1.2s
+
+tic()
+reg_df <- pull_workflow_fit(log_fit) %>% 
+  broom::tidy(conf.int = TRUE, exponentiate = TRUE) 
+toc() #26s
+
+
+folds <- vfold_cv(train_data, v=10)
+
+keep_pred <- control_resamples(save_pred = TRUE)
+
+tic()
+log_res <- log_workflow %>%
+  fit_resamples(
+    resamples = folds,
+    control = keep_pred)
+toc() #10s
+
+collect_metrics(log_res) 
+
+#Note for writing roc 0.599, acuracy 0.588
+
+log_fit$fit$fit
+
+log_auc <- log_res %>%
+  collect_predictions() %>%
+  roc_curve(detected, .pred_TRUE) %>%
+  autoplot()
+
+g3 <- reg_df %>%
+  mutate(response = "Chlorophyll A") %>% 
+  mutate(p_value = ifelse(p.value > 0.05, "p>0.05", ifelse(p.value <0.01, "p<0.01", "p<0.05"))) %>%  #pull(p_value) %>% unique()
+  mutate(p_value = as_factor(p_value) %>% 
+           fct_relevel(., "p<0.01", "p<0.05", "p>0.05")  ) %>%  
+  mutate(type = case_when(
+    str_detect(term, "temp_") ~ "Temperature",
+    str_detect(term, "sss_") ~ "Salinity",
+    str_detect(term, "biome") ~ "Marine realms",
+    str_detect(term, "Intercept|lon|lat") ~ ".")) %>% 
+  mutate(term = str_remove_all(term, "biome_"), 
+         term = str_replace(term, "X.Missing", "High seas"), 
+         term = str_replace(term, "temp_std_longterm", "Long term variation (std)"),
+         term = str_replace(term, "temp_std_fast_oscillations", "Fast oscillations (std)"),
+         term = str_replace(term, "temp_std_annual_cycle", "Annual cycle (std)"),
+         term = str_replace(term, "temp_slope", "Slope of linear trend"),
+         term = str_replace(term, "temp_mean", "Mean"),
+         term = str_replace(term, "sss_std_longterm", "Long term variation (std)"),
+         term = str_replace(term, "sss_std_fast_oscillations", "Fast oscillations (std)"),
+         term = str_replace(term, "sss_std_annual_cycle", "Annual cycle (std)"),
+         term = str_replace(term, "sss_slope", "Slope of linear trend"),
+         term = str_replace(term, "sss_mean", "Mean"),
+         term = str_replace(term, "lon$", "Longitud"),
+         term = str_replace(term, "lat$", "Latitude"),
+         term = str_replace_all(term, "\\.", " "),
+         term = str_replace_all(term, "_", " "), 
+         term = str_trim(term, "both"), 
+         term = str_replace_all(term, "  ", " "),
+         term = str_to_sentence(term)
+  ) %>% 
+  ggplot(aes(estimate, term)) +
+  geom_point(aes(color = p_value), size = 0.5) +
+  geom_errorbarh(
+    aes(xmin = conf.low, xmax = conf.high, color = p_value), size = 0.25) +
+  geom_vline(xintercept = 1, size = 0.3) + 
+  facet_grid(type~response, scales = "free", space = "free_y", switch = "y") +
+  scale_color_manual("", values = c("#6a3d9a", "#ff7f00", "#a6cee3")) +
+  labs(x = "Odds of detecting symptoms of resilience loss",
+       y = "Explanatory variables", tag = "A") +
+  theme_light(base_size = 6) +
+  theme(legend.position = "top") 
+
+g3
+
+
+### random forest
+#### random forest ####
+rf_rcp <- recipe(
+  detected ~ temp_std_longterm + temp_std_annual_cycle + 
+    temp_std_fast_oscillations + temp_slope + temp_mean +
+    sss_std_longterm + sss_std_annual_cycle + sss_std_fast_oscillations +  
+    sss_slope +  sss_mean + biome ,
+  data = train_data) %>%
+  step_dummy(biome) %>%
+  step_zv(all_predictors()) %>%
+  step_normalize(all_numeric()) %>%
+  #step_interact(terms = ~ prec_var:temp_var) %>%
+  themis::step_downsample(detected)
+
+
+rf_prep <- prep(rf_rcp)
+juiced <- juice(rf_prep)
+
+## model specification
+rf_model <- rand_forest(mtry = tune(), min_n = tune(), trees = 1000) %>% 
+  set_mode("classification") %>%
+  set_engine("ranger") #importance = "impurity"
+
+## workflow:
+rf_workflow <- workflow() %>%
+  add_recipe(rf_rcp) %>%
+  add_model(rf_model) 
+
+tic()
+df_plot <- rf_final %>%
+  set_engine("ranger", importance = "permutation") %>%
+  fit(detected ~ .,
+      data = juice(rf_prep)) 
+toc() #4.2m
+
+
+df_plot %>% vip::vip(geom = "point", include = TRUE) +
+  labs(title = "Random forest on detection", 
+       subtitle = "ROC area under the curve 0.829") +
+  theme_light(base_size = 8)
+
+df_mar <- tibble(
+  term = names(df_plot$fit$variable.importance),
+  importance = df_plot$fit$variable.importance, 
+  response = "Chlorophyll A")
+
+g4 <- df_mar %>% 
+  mutate(type = case_when(
+    str_detect(term, "temp_") ~ "Temperature",
+    str_detect(term, "sss_") ~ "Salinity",
+    str_detect(term, "biome") ~ "Marine realms",
+    str_detect(term, "Intercept|lon|lat") ~ ".")) %>% 
+  mutate(term = str_remove_all(term, "biome_"), 
+         term = str_replace(term, "X.Missing", "High seas"), 
+         term = str_replace(term, "temp_std_longterm", "Temperature: Long term variation (std)"),
+         term = str_replace(term, "temp_std_fast_oscillations", "Temperature: Fast oscillations (std)"),
+         term = str_replace(term, "temp_std_annual_cycle", "Temperature: Annual cycle (std)"),
+         term = str_replace(term, "temp_slope", "Temperature: Slope of linear trend"),
+         term = str_replace(term, "temp_mean", "Temperature: Mean"),
+         term = str_replace(term, "sss_std_longterm", "Salinity: Long term variation (std)"),
+         term = str_replace(term, "sss_std_fast_oscillations", "Salinity: Fast oscillations (std)"),
+         term = str_replace(term, "sss_std_annual_cycle", "Salinity: Annual cycle (std)"),
+         term = str_replace(term, "sss_slope", "Salinity: Slope of linear trend"),
+         term = str_replace(term, "sss_mean", "Salinity: Mean"),
+         term = str_replace(term, "lon$", "Longitud"),
+         term = str_replace(term, "lat$", "Latitude"),
+         term = str_replace_all(term, "\\.", " "),
+         term = str_replace_all(term, "_", " "), 
+         term = str_trim(term, "both"), 
+         term = str_replace_all(term, "  ", " "),
+         term = str_to_sentence(term)
+  )  %>% 
+  top_n(15, importance) %>% 
+  mutate(term = as_factor(term) %>% fct_reorder(., importance)) %>% 
+  ggplot(aes(importance, term)) +
+  geom_col() + 
+  facet_wrap(response~., scales = "free", nrow = 2) +
+  labs(x = "Importance (permutation)",
+       y = "Random forest strongest predictors", tag = "B") +
+  theme_light(base_size = 6) +
+  theme(legend.position = "top") 
+
+g3 + g4 + plot_layout(widths = c(2,1))
+
+ggsave(filename = "figures/fig_regressions_marine.png", plot = last_plot(),
+       device = "png", dpi = 300,
+       width = 7, height = 3.5, units = "in")
 
 #### Supplementary material ####
 

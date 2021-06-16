@@ -130,7 +130,7 @@ final_wf <- workflow() %>%
 final_fit <- final_wf %>% 
     last_fit(data_split)
 
-final_fit$.metrics
+final_fit$.metrics # TER 0.879 roc_auc, 
 ## the model does not overfit, same auc on test than on train data
 
 final_fit %>% 
