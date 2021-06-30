@@ -199,7 +199,7 @@ log_rcp <- recipe(
         prec_std_longterm + prec_std_annual_cycle + prec_std_fast_oscillations + temp_slope + 
         prec_slope + temp_mean + prec_mean + prop_change  +  lcc_10 + lcc_11 + lcc_30 + 
         lcc_40 + lcc_61 +  lcc_71 +  lcc_80 +  lcc_100 +  lcc_130 +  lcc_190 + lcc_200 + lcc_202 +
-      burn_area + biome ,
+      burn_area + biome lon + lat,
     data = train_data) %>%
     step_filter(biome != "Rock and Ice") %>%
     step_log(burn_area, signed = TRUE) %>% 

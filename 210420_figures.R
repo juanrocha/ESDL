@@ -26,9 +26,12 @@ load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/210301_delta_detected_
 load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/210212_deltas_chlorA_log.RData") #19Mb
 load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/210301_delta_detected_ChlorA_log.RData")
 
-# dataset with biomes:
+# dataset with biomes, ecosystems and countries:
 load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/terrestrial_biomes.RData')
 load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/marine_biomes.RData')
+
+load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/tererestrial_ecosystems.RData")
+load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/countries.RData")
 
 ls()
 
@@ -227,6 +230,38 @@ ggsave(
   device = "png",
   width = 7, height = 5, dpi = 320
 )
+
+#### Countries & ecosystems ####
+dat <- dat %>% 
+  left_join(df_eco) %>% 
+  left_join(df_countries)
+
+df_fig4 <- dat %>% 
+  rename(country = name) %>% 
+  filter(country != "Ashmore and Cartier Is.") %>%  #error with country code
+  group_by(country) %>% 
+  summarize(area = n(), detected_area = sum(detected), eco_types = unique(ecosystem)) %>% 
+  filter(!is.na(country), !is.na(eco_types)) %>% 
+  add_tally(name = "n_eco") %>% select(-eco_types) %>% 
+  unique() %>% 
+  mutate(prop = detected_area / area) %>% 
+  arrange(desc(detected_area))
+
+## checking missing values: coastal areas where the rasterize fails.
+dat %>% 
+  filter(is.na(name)) %>% ggplot(aes(lon,lat)) + geom_tile(aes(fill=detected))
+
+df_fig4 %>% 
+  arrange(desc(detected_area)) %>% 
+  mutate(country = as.character(country)) %>% ungroup() %>% 
+  top_n(10, detected_area) %>% select(-area, -n_eco) %>% 
+  pivot_longer(cols = 2:last_col(), names_to = "stat", values_to = "value") %>% 
+  ggplot(aes(country, value)) + 
+  geom_col() +
+  facet_wrap(~ stat, scales = "free_x") +
+  coord_flip()
+
+  
 
 #### Time coherence ####
 
