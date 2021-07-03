@@ -316,7 +316,7 @@ rf_rcp <-  recipe(
 
 rf_model <- rand_forest(mtry = tune(), min_n = tune(), trees = 1000) %>% 
     set_mode("classification") %>%
-    set_engine("ranger", importance = "impurity")
+    set_engine("ranger", importance = "permutation")
 
 rf_workflow <- workflow() %>%
     add_model(rf_model) %>%

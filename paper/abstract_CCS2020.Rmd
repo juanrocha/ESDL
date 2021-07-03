@@ -1,0 +1,44 @@
+---
+title: Detecting regime shifts in ecosystems
+author: |
+  | \small \textbf{Juan C. Rocha}
+  | \small Stockholm Resilience Centre
+  | \small Stockholm University
+  | \small \texttt{\href{mailto:juan.rocha@su.se}{\nolinkurl{juan.rocha@su.se}}}
+
+
+# abstract: |
+   
+
+bibliography: references.bib
+csl: nature.csl
+output:
+  pdf_document:
+    dev: pdf
+    keep_tex: no
+    toc: no
+    latex_engine: xelatex
+  word_document:
+    toc: no
+citecolor: blue
+documentclass: article
+font: Arial
+fontsize: 10pt
+keywords:
+- cooperation
+- thresholds
+- risk
+- uncertainty
+- regime shifts
+linkcolor: blue
+urlcolor: blue
+header-includes:
+- \usepackage{dcolumn, rotating, longtable, lineno, float, fontspec, array, tabularx}
+- \setmainfont{Arial}
+- \renewcommand{\abstractname}{}
+- \graphicspath{{figures/}}
+- \usepackage[margin=2.5cm]{geometry}
+---
+
+Ecosystems around the world are at risk of critical transitions due to increasing anthropogenic pressures and climate change. Yet, it is unclear where the risks are higher or where in the world are ecosystems more vulnerable. Here I measure resilience of primary productivity proxies for marine and terrestrial ecosystems globally. Preliminary results show that up to 30% of global terrestrial ecosystem show symptoms of resilience loss. These early warning signals affect all types of biomes, but by large Arctic and boreal forest are the most affected. Despite our results are likely an underestimation, they enable the identification of risk areas as well as the potential synchrony of some transitions. Mapping where ecosystems are likely to undergo critical transitions or long transients can help prioritize areas for management interventions and conservation. Our results pave the way towards developing an ecological resilience observatory.
+

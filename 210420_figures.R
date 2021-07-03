@@ -251,18 +251,53 @@ df_fig4 <- dat %>%
 dat %>% 
   filter(is.na(name)) %>% ggplot(aes(lon,lat)) + geom_tile(aes(fill=detected))
 
-df_fig4 %>% 
+g1 <- df_fig4 %>% 
   arrange(desc(detected_area)) %>% 
   mutate(country = as.character(country)) %>% ungroup() %>% 
   top_n(10, detected_area) %>% select(-area, -n_eco) %>% 
+  mutate(country = as_factor(country), 
+         country = fct_reorder(country, detected_area, sort)) %>% 
   pivot_longer(cols = 2:last_col(), names_to = "stat", values_to = "value") %>% 
+  mutate(stat = case_when(stat == "detected_area" ~ "Detected area (pixels)",
+                          stat == "prop" ~ "Proportion of territory")) %>% 
   ggplot(aes(country, value)) + 
   geom_col() +
   facet_wrap(~ stat, scales = "free_x") +
-  coord_flip()
+  coord_flip() +
+  labs(y = "Value", x = "Country", tag = "A") +
+  theme_light(base_size = 7)
 
-  
+g2 <- df_fig4 %>% 
+  arrange(desc(n_eco)) %>% 
+  mutate(country = as.character(country)) %>% ungroup() %>% 
+  top_n(10, n_eco) %>% select(-area, -detected_area) %>% 
+  mutate(country = as_factor(country), 
+         country = fct_reorder(country, n_eco, sort)) %>% 
+  pivot_longer(cols = 2:last_col(), names_to = "stat", values_to = "value") %>% 
+  mutate(stat = case_when(stat == "n_eco" ~ "Ecosystems lossing resilience",
+                          stat == "prop" ~ "Proportion of territory")) %>% 
+  ggplot(aes(country, value)) + 
+  geom_col() +
+  facet_wrap(~ stat, scales = "free_x") +
+  coord_flip() +
+  labs(y = "Value", x = "Country", tag = "B") +
+  theme_light(base_size = 7) 
 
+## for writing
+df_fig4 %>% 
+  arrange(desc(n_eco)) %>% 
+  mutate(country = as.character(country)) %>% ungroup() %>% 
+  top_n(10, prop) %>%  arrange(desc(prop))
+
+g1 + g2
+
+ggsave(
+  plot = last_plot(),
+  filename = "fig_countries.png",
+  path = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/paper/figures/",
+  device = "png",
+  width = 6, height = 3, dpi = 320
+)
 #### Time coherence ####
 
 load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201028_segmented_terrestrial_ecosystem_respiration_log.RData")
@@ -1029,3 +1064,7 @@ px_results %>%
   facet_grid(stat~variable) +
   scale_fill_viridis_c() +
   theme_light(base_size = 6)
+
+
+
+#### for writing ####
