@@ -1,9 +1,13 @@
+#### load tools ####
 library(tidyverse)
 library(tictoc)
 library(rworldmap)
 library(sf)
 library(patchwork)
 library(tidymodels)
+library(scico)
+library("rnaturalearth")
+library("rnaturalearthdata")
 # library(cleangeo)
 data("coastsCoarse")
 
@@ -79,6 +83,10 @@ dat %>%
     legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt")
   )
 
+base_map <- ne_countries(scale = "medium", returnclass = "sf")
+
+
+
 #### Figure 1 & 2####
 
 df_affected <- dat %>%
@@ -87,9 +95,9 @@ df_affected <- dat %>%
   summarise(affected_area = n())
 
 df_affected <- df_affected %>%
-  #left_join((dat %>% group_by(biome) %>% summarize(n = n())))
+   left_join((dat %>% group_by(biome) %>% summarize(n = n())))
   #when marine:
-  left_join((df_marine %>% group_by(biome) %>% summarize(n = n())))
+  #left_join((df_marine %>% group_by(biome) %>% summarize(n = n())))
 
 g2 <- df_affected %>%
   mutate(proportion = affected_area / n) %>%
@@ -97,18 +105,21 @@ g2 <- df_affected %>%
   geom_col(aes(fill = biome), alpha = 0.75, show.legend = FALSE) +
   labs(tag = "B", y = "Proportion of area", x = "Biomes") +
   scale_y_continuous(labels = scales::percent) +
+  scale_fill_scico_d( palette = "romaO", na.value = "grey50") +
   coord_flip() +
   theme_light(base_size = 5) + theme(axis.text.y = element_blank())
 
 g3 <- dat %>%
   filter(n_ews > 0) %>%
-  mutate(n_ews = as_factor(n_ews)) %>%
+  mutate(n_ews = as_factor(n_ews),
+         n_ews = fct_relevel(n_ews, "5", after = 4)) %>% 
   ggplot(aes(fct_rev(biome))) +
   geom_bar(aes(fill = biome, alpha = n_ews)) +
   guides(fill = "none", alpha = guide_legend(
     title.position = "top", keywidth = 0.25, keyheight = 0.3, label.position = "bottom")) +
   coord_flip() +
-  scale_alpha_discrete("Signals",range = c(0.5,1)) +
+  scale_alpha_discrete("Signals", range = c(0.5,1)) +
+  scale_fill_scico_d(palette = "romaO", na.value = "grey50") +
   #scale_y_log10() +
   labs(tag = "C", y = "Area in pixels", x = "Biomes") +
   theme_light(base_size = 5) +
@@ -126,13 +137,17 @@ quartz(width = 7, height = 4, pointsize = 6)
 g1 <- dat %>%
   ggplot(aes(lon,lat)) +
   geom_tile(aes(fill = biome, alpha = detected)) +
+  geom_path(
+    data = map_data("world") %>% rename(lon = long),
+    aes(map_id = region, group = group), size = 0.15 ) +
   scale_alpha_discrete(name = "Detected") +
-  scale_fill_hue(name = "Terrestrial biomes") +
+  scale_fill_scico_d(
+    name = "Terrestrial biomes", palette = "romaO", na.value = "grey50") +
   guides(
     fill = guide_legend(ncol = 4, title.position = "top"),
     alpha = guide_legend(ncol = 1, title.position = "top")
-  ) +
-  theme_void(base_size = 6) + labs(tag = "A") +
+  ) + 
+  theme_void(base_size = 6) + labs(tag = "A") + ylim(-62,NA) +
   theme(
     legend.position = "bottom", #c(0.7,0.1),
     legend.direction = "horizontal",
@@ -147,6 +162,7 @@ g1 <- dat %>%
   annotation_custom(
     grob = ggplotGrob(g3),
     xmin = -189, ymin = -60, xmax = -110, ymax = -20)
+
 g1
 
 
@@ -155,80 +171,83 @@ ggsave(
   filename = "fig_detection_GPP.png",
   path = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/paper/figures/",
   device = "png",
-  width = 7, height = 4, dpi = 320
+  width = 7, height = 4, dpi = 400
 )
 
 
 #### Figure 3: Marine realms ####
-g0 <- dat %>%
-  ggplot(aes(lon,lat)) +
-  geom_tile(aes(fill = biome, alpha = detected)) +
-  geom_path(aes(long,lat, group = group), data = coastsCoarse, size=0.1) +
-  scale_alpha_discrete(name = "Detected") +
-  scale_fill_hue(name = "Marine rehalms") +
-  guides(
-    fill = "none",
-    alpha = guide_legend(ncol = 2, title.position = "left")
-  ) +
-  theme_void(base_size = 6) +#labs(tag = "C") + 
-  ylim(c(-60,NA)) +
-  theme(
-    legend.position = c(0.75,0.1),
-    legend.direction = "horizontal",
-    legend.box = "horizontal", legend.title.align = 1,
-    legend.margin = margin(t = 0, r = 5, b = 2, l = 5, unit = "pt"),
-    legend.key.size = unit(0.15, "cm"),
-    legend.text = element_text(size = 5),
-    plot.background = element_rect(fill = "white")
-  ) +
-  annotation_custom(
-    grob = ggplotGrob(g2),
-    xmin = -40, ymin = 52, xmax = 80, ymax = 90) +
-  annotation_custom(
-    grob = ggplotGrob(g3),
-    xmin = 80, ymin = 52, xmax = 175, ymax = 90)
-
+pal <- "hawaii"
 g2 <- df_affected %>%
   mutate(proportion = affected_area / n) %>%
   ggplot(aes(fct_rev(biome), proportion)) +
   geom_col(aes(fill = biome), alpha = 0.75, show.legend = FALSE) +
-  labs(y = "Proportion of area", x = "Marine rehalms") +
+  labs(y = "Proportion of area", x = "Marine realms") +
   scale_y_continuous(labels = scales::percent) +
-  coord_flip() +
-  theme_light(base_size = 6) #+ theme(axis.text.y = element_blank())
+  scale_fill_scico_d( palette = pal, na.value = "grey50") +
+  coord_flip() + labs(tag = "B") +
+  theme_light(base_size = 5) #+ theme(axis.text.y = element_blank())
 
 g3 <- dat %>%
   filter(n_ews > 0) %>%
-  mutate(n_ews = as_factor(n_ews)) %>%
+  mutate(n_ews = as_factor(n_ews),
+         n_ews = fct_relevel(n_ews, "1","2","3","4","5")) %>%
   ggplot(aes(fct_rev(biome))) +
   geom_bar(aes(fill = biome, alpha = n_ews)) +
   guides(fill = "none", alpha = guide_legend(
     title.position = "top", keywidth = 0.25, keyheight = 0.3, label.position = "right")) +
   coord_flip() +
   scale_alpha_discrete("Signals",range = c(0.5,1)) +
-  #scale_y_log10() +
-  labs(y = "Area in pixels", x = "Marine rehalms") +
-  theme_light(base_size = 6) +
+  scale_fill_scico_d( palette = pal, na.value = "grey50") +
+  labs(y = "Area in pixels", x = "Marine realms", tag = "C") +
+  theme_light(base_size = 5) + 
   theme(
-    legend.position = c(0.8, 0.3),
+    legend.position = c(0.7, 0.4),
     #legend.direction = "vertical",
     #legend.box = "vertical", legend.title.align = 0.5,
     #legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt"),
     axis.text.y = element_blank(),
     legend.text = element_text(size = 5)) 
 
+g0 <- dat %>%
+  ggplot(aes(lon,lat)) +
+  geom_tile(aes(fill = biome, alpha = detected)) +
+  geom_path(aes(long,lat, group = group), data = coastsCoarse, size=0.1) +
+  scale_alpha_discrete(name = "Detected") +
+  scale_fill_scico_d(
+    name = "Marine realms", palette = pal, na.value = "grey50") +
+  guides(
+    fill = "none",
+    alpha = guide_legend(ncol = 2, title.position = "left")
+  ) +
+  theme_void(base_size = 6) + labs(tag = "A") + 
+  ylim(c(-60,NA)) +
+  theme(
+    legend.position = c(0.85,0.1),
+    legend.direction = "horizontal",
+    legend.box = "horizontal", legend.title.align = 1,
+    legend.margin = margin(t = 0, r = 5, b = 2, l = 5, unit = "pt"),
+    legend.key.size = unit(0.15, "cm"),
+    legend.text = element_text(size = 7)
+  ) +
+  annotation_custom(
+    grob = ggplotGrob(g2),
+    xmin = 0, ymin = 52, xmax = 100, ymax = 90) +
+  annotation_custom(
+    grob = ggplotGrob(g3),
+    xmin = 100, ymin = 52, xmax = 180, ymax = 90)
 
 
-quartz(width = 7, height = 4)
+#quartz(width = 7, height = 4)
 
-g2 + g3 + plot_layout(widths = c(1,2))
+#g2 + g3 + plot_layout(widths = c(1,2))
+g0
 
 ggsave(
   plot = last_plot(),
   filename = "fig_detection_marine.png",
   path = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/paper/figures/",
   device = "png",
-  width = 7, height = 5, dpi = 320
+  width = 7, height = 4, dpi = 400
 )
 
 #### Countries & ecosystems ####
@@ -331,19 +350,25 @@ px_all %>%
   geom_tile(aes(fill = time)) +
   geom_path(aes(long,lat, group = group), size = 0.1, data = coastsCoarse) +
   facet_grid(stat ~ var) +
-  scale_fill_datetime(name = "Year", low = "dodgerblue", high = "goldenrod") + 
-  theme_light(base_size = 8)
+  #scale_fill_datetime(name = "Year", low = "dodgerblue", high = "red") +
+  scale_fill_scico(name = "Year", palette = "hawaii", trans = "time") +
+  ylim(-60,NA) + labs(x = "", y ="") +
+  theme_light(base_size = 7) + 
+  theme(legend.position = "bottom", 
+        legend.key.height = unit(3, "mm"),
+        legend.key.width = unit(15, "mm"), 
+        axis.text = element_blank())
 
 ggsave(
   plot = last_plot(),
   filename = "sm_temporal_map.png",
   path = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/paper/figures/",
   device = "png",
-  width = 6, height = 5, dpi = 320
+  width = 6, height = 5, dpi = 400
 )
 
 
-g3 <- px_all %>% 
+g1 <- px_all %>% 
   mutate(
     stat = case_when(
       stat == "ac1" ~ "Autocorrelation lag-1",
@@ -355,8 +380,28 @@ g3 <- px_all %>%
   ggplot(aes(time, lon)) +
   stat_density2d_filled(geom = "tile", aes(fill = after_stat(density)), contour = FALSE) +
   facet_grid(stat~var) + 
-  scale_fill_viridis_c(option = "D") + labs(tag = "B") +
-  theme_light(base_size = 6) #+ theme(legend.position  = "bottom")
+  scale_fill_viridis_c(option = "D") + 
+  labs(tag = "A", x = "Time", y = "Longitud") +
+  theme_light(base_size = 6) + 
+  theme(legend.key.height = unit(10, "mm"),
+        legend.key.width = unit(3, "mm"))
+
+g3 <- px_all %>% 
+  mutate(
+    stat = case_when(
+      stat == "ac1" ~ "Autocorrelation lag-1",
+      stat == "std" ~ "Standard deviation",
+      stat == "kur" ~ "Kurtosis",
+      stat == "skw" ~ "Skewness",
+      stat == "fd" ~ "Fractal dimension"
+    )) %>% 
+  ggplot(aes(time, lat)) +
+  stat_density2d_filled(geom = "tile", aes(fill = after_stat(density)), contour = FALSE) +
+  facet_grid(stat~var) + 
+  scale_fill_viridis_c(option = "D") + labs(tag = "B", x = "Time", y = "Latitude") +
+  theme_light(base_size = 6) +
+  theme(legend.key.height = unit(10, "mm"),
+      legend.key.width = unit(3, "mm"))
 
 ggsave(
   plot = (g1/g3), # g1 is lat, g3 is lon
@@ -412,7 +457,7 @@ px_all %>%
 ## Terrestrial ecosystems
 
 
-# load data:
+# load data: Run first GPP, then TER, and then combine them.
 load("Results/regression_data_GPP.RData")
 load("Results/regression_data_TER.RData")
 
@@ -426,9 +471,6 @@ deltas <- deltas %>% mutate(detected = n_ews != 0) %>%
   mutate(detected = as_factor(detected),
          detected = fct_relevel(detected, "TRUE", "FALSE")) %>%
   mutate(biome = fct_explicit_na(biome))
-
-
-
 
 ## Data split
 data_split <- initial_split(
@@ -508,6 +550,9 @@ df_rf2 <- rf_final %>%
       data = juice(rf_prep)) 
 toc() # ~ 5mins
 
+## extract p_values
+## ranger::importance_pvalues(df_rf2$fit, method = "altmann", formula = df_rf2$preproc$terms, data = juice(rf_prep))
+
 df_gpp <- tibble(
   variable = names(df_rf1$fit$variable.importance),
   importance = df_rf1$fit$variable.importance, 
@@ -570,11 +615,11 @@ g2 <- bind_rows(df_gpp, df_ter) %>%
   theme_light(base_size = 6) +
   theme(legend.position = "top") 
 
-g1 + g2 + plot_layout(widths = c(2,1))
-
-ggsave(filename = "figures/fig_regressions_terrestrial.png", plot = last_plot(),
-       device = "png", dpi = 300,
-       width = 7, height = 4, units = "in")
+# g1 + g2 + plot_layout(widths = c(2,1))
+# 
+# ggsave(filename = "figures/fig_regressions_terrestrial.png", plot = last_plot(),
+#        device = "png", dpi = 300,
+#        width = 7, height = 4, units = "in")
 
 ### Logistic regression:
 ## Workflow: run the code for GPP first, then for TER, combine the datasets and produce one summarizing figure
@@ -692,6 +737,7 @@ g1 <- df_reg %>%
          term = str_replace(term, "prop_change", "Proportion of land cover change"),
          term = str_replace(term, "lon$", "Longitud"),
          term = str_replace(term, "lat$", "Latitude"),
+         term = str_replace(term, "burn_area", "Burnt_area"),
          term = str_replace_all(term, "\\.", " "),
          term = str_replace_all(term, "_", " "), 
          term = str_trim(term, "both"), 
@@ -712,9 +758,9 @@ g1 <- df_reg %>%
 
 g1
 
-ggsave(filename = "figures/fig_regression_terrestrial.png", plot = g1,
-       device = "png", dpi = 300,
-       width = 4.5, height = 4, units = "in")
+# ggsave(filename = "figures/fig_regression_terrestrial.png", plot = g1,
+#        device = "png", dpi = 300,
+#        width = 4.5, height = 4, units = "in")
 
 ### Marine ecosystems
 load("Results/210608_rf_chlorA.RData")
@@ -829,7 +875,7 @@ g3 <- reg_df %>%
   facet_grid(type~response, scales = "free", space = "free_y", switch = "y") +
   scale_color_manual("", values = c("#6a3d9a", "#ff7f00", "#a6cee3")) +
   labs(x = "Odds of detecting symptoms of resilience loss",
-       y = "Explanatory variables", tag = "A") +
+       y = "Explanatory variables", tag = "C") +
   theme_light(base_size = 6) +
   theme(legend.position = "top") 
 
@@ -914,7 +960,7 @@ g4 <- df_mar %>%
   geom_col() + 
   facet_wrap(response~., scales = "free", nrow = 2) +
   labs(x = "Importance (permutation)",
-       y = "Random forest strongest predictors", tag = "B") +
+       y = "Random forest strongest predictors", tag = "D") +
   theme_light(base_size = 6) +
   theme(legend.position = "top") 
 
@@ -924,12 +970,21 @@ ggsave(filename = "figures/fig_regressions_marine.png", plot = last_plot(),
        device = "png", dpi = 300,
        width = 7, height = 3.5, units = "in")
 
+
+## Version combined
+g1 + g2 + g3 + g4 + 
+  plot_layout(widths = c(2,1), heights = c(2,1), ncol =2, nrow=2)
+
+ggsave(filename = "paper/figures/fig_regressions_combined.png", plot = last_plot(),
+       device = "png", dpi = 400,
+       width = 7, height = 7, units = "in")
+
 #### Supplementary material ####
 
 
 stat_ews <- c("Standard deviation", "Autocorrelation lag-1", "Skewness",
  "Kurtosis", "Fractal dimension")
-vals <- names(dat)[names(dat) %>% str_detect("abruptness_.")][c(5,1,4,3,2)]
+vals <- names(dat)[names(dat) %>% str_detect("value_delta_.")][c(5,1,4,3,2)]
 alphas <- names(dat)[names(dat) %>% str_detect("ews_delta_.")][c(5,1,4,3,2)]
 
 plot_maps <- list()
@@ -961,7 +1016,7 @@ plot_maps <- pmap(
         legend.box = "horizontal", legend.title.align = 0.5,
         legend.margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt"),
         plot.title = element_text(hjust = 0.5)
-      ) # +
+      )  #+
       # annotation_custom(
       #   grob = ggplotGrob(
       #     ggplot(
@@ -971,6 +1026,8 @@ plot_maps <- pmap(
       #                    alpha = 0.5, show.legend = FALSE, size = 0.05
       #                  ) + #outlier.size = 0.1
       #       labs(y = "Biomes", x = expression(Delta)) +
+      #       scale_fill_scico_d(palette = "romaO", na.value = "grey50") + 
+      #       scale_color_scico_d(palette = "romaO", na.value = "grey50") +
       #       theme_light(base_size = 6) + theme(axis.text.y = element_blank())
       #   ), xmin = -185, ymin = -60, xmax = -90, ymax = 10)
 
@@ -1013,7 +1070,7 @@ ggsave(
   filename = "figS_marine.png",
   path = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/paper/figures/",
   device = "png",
-  width = 7.5, height = 8, dpi = 320
+  width = 7.5, height = 8, , dpi = 400
 )
 
 

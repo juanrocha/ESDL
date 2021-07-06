@@ -3,6 +3,7 @@ library(tidyverse)
 library(tictoc)
 
 
+
 ## load dataset with identified pixels from segmented regression script:
 files <- list.files(path = "Results/") 
 
@@ -100,17 +101,19 @@ df_all <- bind_rows(df1, df2, df3, df4) %>%
 
 #J201208: Note that the categories are not mutually exclusive, a pixel can show CSD and KSK for example.
 
-df_all %>%
+g2 <- df_all %>%
     pivot_longer(
         cols = !var, names_to = "ews_type", values_to = "proportion") %>%
     mutate(ews_type = as_factor(ews_type)) %>% 
     ggplot(aes(var, proportion)) +
     geom_col(aes(fill = fct_rev(ews_type)), position = "stack") +
     scale_fill_brewer("Early warning type", palette = "Dark2", 
-                      guide = guide_legend(title.position = "top")) +
+                      guide = guide_legend(title.position = "top", nrow = 3, reverse = TRUE)) +
     labs(x = "Variable", y = "Proportion") +
     coord_flip() +
-    theme_bw(base_size = 6) +
-    theme(legend.position = "bottom", legend.key.size = unit(0.5, "cm"))
+    theme_bw(base_size = 6) + labs(tag = "B") +
+    theme(legend.position = "bottom", 
+          legend.key.size = unit(0.25, "cm"),
+          legend.text = element_text(size = 4), legend.title = element_text(size = 5))
 
 ggsave(filename = "figures/ews_type.png", device = "png", dpi = 300, width = 4, height = 3)

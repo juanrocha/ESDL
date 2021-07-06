@@ -4,6 +4,9 @@
 library(tidyverse)
 library(tictoc)
 library(future)
+library(patchwork)
+library(scico)
+
 
 # load results:
 load('~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201022_summary_gpp_log.RData')
@@ -72,7 +75,7 @@ df_pixel <- df_pixel %>%
      bind_rows() %>%
      mutate(lat = as.numeric(lat)) # now you know where they are.
 
-i = 8
+i = 4
 annotation_df <- df_pixel %>%
     filter(lon == lons[i], lat == lats[i]) %>%
     dplyr::select(-lon, -gpp, -lat) %>%
@@ -106,18 +109,18 @@ annotation_df <- annotation_df %>%
     "Fractal dimension" = "ews_fd"))
 
 
-df_pixel %>%
+g1 <- df_pixel %>%
     filter(lon == lons[i], lat == lats[i]) %>%
     dplyr::select(-lon, -gpp, -lat) %>%
     # filter(ews_fd != 0) %>%
     pivot_longer(cols = 2:last_col(), names_to = "stat", values_to = "value") %>%
-    mutate(stat = as_factor(stat)) %>%
+    mutate(stat = as_factor(stat) %>% fct_relevel(., "ews_fd", after = 1)) %>%
     mutate(stat = fct_recode(
         stat, "Processed time series" = "gpp_1d",
+        "Fractal dimension" = "ews_fd", 
         "Standard deviation" = "ews_std",
         "Autocorrelation lag-1" = "ews_ac1",
-        "Kurtosis" = "ews_kur", "Skewness" = "ews_skw",
-        "Fractal dimension" = "ews_fd")) %>%
+        "Kurtosis" = "ews_kur", "Skewness" = "ews_skw")) %>% #pull(stat) %>% levels()
     ggplot(aes(time,value)) +
     geom_line(size = 0.1) +
     geom_segment(
@@ -131,22 +134,37 @@ df_pixel %>%
     geom_point(
         data = px_results %>%
             filter(lon == lons[i], lat == lats[i]) %>%
-            mutate(stat = as_factor(stat),
+            mutate(stat = as_factor(stat) %>% fct_relevel(., "fd", "ac1", "std", "kur", "skw"),
                 stat = fct_recode(stat,
+                "Fractal dimension" = "fd",
                 "Standard deviation" = "std",
                 "Autocorrelation lag-1" = "ac1",
-                "Kurtosis" = "kur", "Skewness" = "skw",
-                "Fractal dimension" = "fd")) %>%
+                "Kurtosis" = "kur", "Skewness" = "skw"
+                )) %>% #pull(stat) %>% levels()
             left_join(select(annotation_df, stat, y)) %>%
             rename(value = y),
         aes(time, value)
     ) +
-    facet_wrap(vars(stat), scales = "free_y", nrow=6) +
-    theme_light(base_size = 5)
+    facet_wrap(vars(stat), scales = "free_y", nrow=3) + labs(tag = "A") +
+    theme_light(base_size = 6)
 
 # quartz.save(file = "figures/figS5_one_pixel_GPP.png", type = "png",
 #             width = 3, height = 5, dpi = 600)
 
+## Compute g2 (ews types) from the script 10-distingusihing_ews_types, then:
+
+(g1 | ((g2 /  guide_area( )) + 
+    plot_layout( heights = c(3,1),
+        guides = 'collect'))) + 
+    plot_layout(widths = c(2,1))
+    
+ggsave(
+    plot = last_plot(),
+    filename = "figS_one_pixel_GPP.png",
+    path = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/paper/figures/",
+    device = "png",
+    width = 7.2, height = 3, , dpi = 400
+)
 
 
 ######## Now identify the break point with the segmented approach:
