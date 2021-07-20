@@ -23,3 +23,8 @@ processed*
 *.clo
 *.cls
 *.sty
+*.rtf
+preprint/
+*.zip
+*.pages
+*.docx
