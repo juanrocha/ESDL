@@ -127,26 +127,30 @@ planet, and in particular, relative to the biome described (due to the
 seasonality differences). $\Delta$ has a bimodal distribution (because zero
 differences are very unlikely), and outliers with respect to each biome
 distribution were reported as places showing symptoms of resilience loss.
-Outiers are here defined as places where $\Delta$ is unusually extreme, either
+Outliers are here defined as places where $\Delta$ is unusually extreme, either
 above the 95% or below the 5% quantiles of $\Delta$ distribution.
 
 To check for the spatial and temporal coherence across time series, a segmented
 regression [@Muggeo:2003go] was used to identify the breaking point at which the
-early warning is detected, and a Davis test for the significant difference in
-slopes before and after the breaking point. Since the time series are
-normalized, the expectation is no difference in variance and hence no detection
-of breaking points. If there is a breaking point and the difference is
-significant and large, one can expect the signal to be a warning of resilience
-loss, specially in the case where other neighbouring areas show similar signals
-in space and time. The statistical detection treats each time series
-independently, but spatial and temporal coherence of the signal offers
-supporting evidence for true detection in the absence of annotated data or
-ground truth.
+early warning is detected. The segmented regression departed from a linear fit
+of the resilience proxy against time, the median of the indicator was used as
+starting value, and only one break point was calculated by default. A Davis
+tested for the significant difference in slopes before and after the breaking
+point. Since the time series are normalized, the expectation is no difference in
+variance and hence no detection of breaking points. If there is a breaking point
+and the difference is significant and large, one can expect the signal to be a
+warning of resilience loss, specially in the case where other neighboring areas
+show similar signals in space and time. The statistical detection treats each
+time series independently, but spatial and temporal coherence of the signal
+offers supporting evidence for true detection in the absence of annotated data
+or ground truth. An additional line of support can be explored by training
+models that exploit information about potential causes of abrupt changes in
+ecosystems to predict the detection (or lack) of resilience loss.
 
-*Regressions:* To further explore what is driving resilience loss, a logistic
-regression and a random forest were fitted to classify pixels where at least two
-metrics suggested loss of resilience. Explanatory variables included air
-temperature at 2m
+*Regressions:* To further test the robustness of the results and explore what is
+driving resilience loss, a logistic regression and a random forest were fitted
+to classify pixels where at least two metrics suggested loss of resilience.
+Explanatory variables included air temperature at 2m
 (<https://cds.climate.copernicus.eu/cdsapp#!/dataset/ecv-for-climate-changee>),
 sea surface temperature [@Merchant:2019fs]
 (<https://climate.esa.int/en/projects/sea-surface-temperature>), precipitation
@@ -182,6 +186,7 @@ productivity targeted node size 10 and 12 variables to split at each node (N =
 31122, OOB error 0.13), 20 node size and 9 variables for terrestrial ecosystem
 respiration (N = 29546, OOB error 0.14), and 20 node size and 9 variables for
 chlorophyll A (N = 54298, OOB error 0.16).
+
 
 
 

@@ -59,7 +59,7 @@ rm(deltas, df_delta_detected)
 ## for writing:
 tt <- dat$detected %>% table()
 
-tt[["TRUE"]] / (tt[["TRUE"]] + tt[["FALSE"]])
+all_perc <- tt[["TRUE"]] / (tt[["TRUE"]] + tt[["FALSE"]])
 
 ## Examples:
 dat %>%
@@ -95,19 +95,41 @@ df_affected <- dat %>%
   summarise(affected_area = n())
 
 df_affected <- df_affected %>%
-   left_join((dat %>% group_by(biome) %>% summarize(n = n())))
+  left_join((dat %>% group_by(biome) %>% summarize(n = n())))
   #when marine:
-  #left_join((df_marine %>% group_by(biome) %>% summarize(n = n())))
+  #left_join((df_marine %>% group_by(biome) %>% count(.drop = TRUE)))
 
 g2 <- df_affected %>%
   mutate(proportion = affected_area / n) %>%
   ggplot(aes(fct_rev(biome), proportion)) +
   geom_col(aes(fill = biome), alpha = 0.75, show.legend = FALSE) +
-  labs(tag = "B", y = "Proportion of area", x = "Biomes") +
+  labs(tag = "C", y = "Proportion of area", x = "Biomes") +
   scale_y_continuous(labels = scales::percent) +
   scale_fill_scico_d( palette = "romaO", na.value = "grey50") +
   coord_flip() +
   theme_light(base_size = 5) + theme(axis.text.y = element_blank())
+
+g4 <- df_affected %>% 
+  mutate(not_detected_area = n - affected_area,
+         Detected = affected_area / sum(df_affected$n),
+         `Not detected` = not_detected_area / sum(df_affected$n)) %>% 
+  select(biome, Detected, `Not detected`) %>% 
+  pivot_longer(2:3, names_to = "detection", values_to = "class") %>% 
+  mutate(detection = as_factor(detection) %>% 
+           fct_rev()) %>% 
+  ggplot(aes(detection, class)) +
+  geom_col(aes(fill = biome, alpha = detection), position = "stack", 
+           show.legend = FALSE) +
+  annotate("text", x = 2, y = round(all_perc + 0.02, digits = 2), hjust = 0, 
+           label = paste(round(all_perc,2)*100, "%"  ), size = 2.5)+
+  coord_flip() +
+  scale_alpha_discrete("Detected", range = c(0.5,1)) +
+  scale_fill_scico_d(palette = "romaO", na.value = "grey50") +
+  labs(x = "Resilience loss", y = "Global aggregate", tag = "B") +
+  scale_y_continuous(labels = scales::label_percent()) +
+  theme_minimal(base_size = 5) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
 
 g3 <- dat %>%
   filter(n_ews > 0) %>%
@@ -121,7 +143,7 @@ g3 <- dat %>%
   scale_alpha_discrete("Signals", range = c(0.5,1)) +
   scale_fill_scico_d(palette = "romaO", na.value = "grey50") +
   #scale_y_log10() +
-  labs(tag = "C", y = "Area in pixels", x = "Biomes") +
+  labs(tag = "D", y = "Area in pixels", x = "Biomes") +
   theme_light(base_size = 5) +
   theme(
     legend.position = c(0.80,0.25),
@@ -140,7 +162,8 @@ g1 <- dat %>%
   geom_path(
     data = map_data("world") %>% rename(lon = long),
     aes(map_id = region, group = group), size = 0.15 ) +
-  scale_alpha_discrete(name = "Detected") +
+  scale_alpha_discrete(
+    name = "Signal", labels = c("Not detected", "Detected")) +
   scale_fill_scico_d(
     name = "Terrestrial biomes", palette = "romaO", na.value = "grey50") +
   guides(
@@ -161,14 +184,17 @@ g1 <- dat %>%
     xmin = -189, ymin = -20, xmax = -110, ymax = 20)+
   annotation_custom(
     grob = ggplotGrob(g3),
-    xmin = -189, ymin = -60, xmax = -110, ymax = -20)
+    xmin = -189, ymin = -60, xmax = -110, ymax = -20)+
+  annotation_custom(
+    grob = ggplotGrob(g4),
+    xmin = -189, ymin = 20, xmax = -120, ymax = 50)
 
 g1
 
 
 ggsave(
   plot = g1,
-  filename = "fig_detection_GPP.png",
+  filename = "fig_detection_TER.png",
   path = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/paper/figures/",
   device = "png",
   width = 7, height = 4, dpi = 400
@@ -176,6 +202,15 @@ ggsave(
 
 
 #### Figure 3: Marine realms ####
+
+df_affected <- dat %>%
+  #filter(detected == TRUE) %>%
+  group_by(biome, detected) %>%
+  summarise(affected_area = n()) %>% 
+  pivot_wider(names_from = detected, names_prefix = "area_", values_from = "affected_area") %>% 
+  rename(n = area_FALSE, affected_area = area_TRUE)
+
+
 pal <- "hawaii"
 g2 <- df_affected %>%
   mutate(proportion = affected_area / n) %>%
@@ -208,33 +243,61 @@ g3 <- dat %>%
     axis.text.y = element_blank(),
     legend.text = element_text(size = 5)) 
 
+g4 <- df_affected %>% 
+  mutate(not_detected_area = n - affected_area,
+         Detected = affected_area / nrow(dat),
+         `Not detected` = not_detected_area / nrow(dat)) %>% 
+  select(biome, Detected, `Not detected`) %>% 
+  pivot_longer(2:3, names_to = "detection", values_to = "class") %>% 
+  mutate(detection = as_factor(detection) %>% 
+           fct_rev()) %>% 
+  ggplot(aes(detection, class)) +
+  geom_col(aes(fill = biome, alpha = detection), position = "stack", 
+           show.legend = FALSE) +
+  annotate("text", x = 2, y = round(all_perc + 0.02, digits = 2), hjust = 0, 
+           label = paste(round(all_perc,2)*100, "%"  ), size = 2.5)+
+  coord_flip() +
+  scale_alpha_discrete("Detected", range = c(0.5,1)) +
+  scale_fill_scico_d(palette = pal, na.value = "grey50") +
+  labs(x = "Resilience loss", y = "Global aggregate", tag = "D") +
+  scale_y_continuous(labels = scales::label_percent()) +
+  theme_light(base_size = 5) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+
+
 g0 <- dat %>%
   ggplot(aes(lon,lat)) +
   geom_tile(aes(fill = biome, alpha = detected)) +
   geom_path(aes(long,lat, group = group), data = coastsCoarse, size=0.1) +
-  scale_alpha_discrete(name = "Detected") +
+  scale_alpha_discrete(
+    name = "Signals of\n resilience loss", 
+    label = c("Not detected", "Detected")) +
   scale_fill_scico_d(
     name = "Marine realms", palette = pal, na.value = "grey50") +
   guides(
     fill = "none",
-    alpha = guide_legend(ncol = 2, title.position = "left")
+    alpha = guide_legend(ncol = 1, title.position = "top")
   ) +
   theme_void(base_size = 6) + labs(tag = "A") + 
   ylim(c(-60,NA)) +
   theme(
-    legend.position = c(0.85,0.1),
-    legend.direction = "horizontal",
-    legend.box = "horizontal", legend.title.align = 1,
+    legend.position = c(0.1,0.95),
+    legend.direction = "vertical",
+    legend.box = "vertical", legend.title.align = 0.5,
     legend.margin = margin(t = 0, r = 5, b = 2, l = 5, unit = "pt"),
     legend.key.size = unit(0.15, "cm"),
-    legend.text = element_text(size = 7)
+    legend.text = element_text(size = 6)
   ) +
   annotation_custom(
-    grob = ggplotGrob(g2),
-    xmin = 0, ymin = 52, xmax = 100, ymax = 90) +
-  annotation_custom(
     grob = ggplotGrob(g3),
-    xmin = 100, ymin = 52, xmax = 180, ymax = 90)
+    xmin = 10, ymin = 52, xmax = 90, ymax = 90) +
+  annotation_custom(
+    grob = ggplotGrob(g4),
+    xmin = 90, ymin = 52, xmax = 180, ymax = 90)+
+  annotation_custom(
+    grob = ggplotGrob(g2),
+    xmin = -100, ymin = 52, xmax = 10, ymax = 90)
 
 
 #quartz(width = 7, height = 4)
