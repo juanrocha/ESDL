@@ -124,7 +124,8 @@ tic()
 results <- files %>%
     future_map(early_warning, window, .progress = TRUE)
 toc() # 60 mins terrestrial data, 2.15 hours marine, 2.5hrs with log-gpp, 4.8hr log-chlorA, 3.7hrs; 2.3hrs TER | 4.63 hours with LAI2 dataset.
-## 14 hrs on GPP-log using Kendall instead... J210818
+## 14 hrs on GPP-log using Kendall instead...
+# J210818: many files fail, only 543 of 720 were completed. I could recover the failed fails and try again, but reading on how kendall t is calculated (the p-value), it doesn't make sense and makes the analysis computationally expensive. In Dakos they calculate the tau with corr.test(x,y, method = "kendall") where x is a reference time series and y is the outcome of the rolling window. But they expect increase in variance and autocorrelation, thus the x reference is the time vector increasing seq(1:length(time)). I cannot do that, otherwise the analysis is restricted to CSD and wont pick up CSU.
 
 ## J200805: `early_warning` finished in the LAI data  but results were not stored, it ran out memory I believe. I can recovered however from the files produced later.
 files2 <- list.files(
