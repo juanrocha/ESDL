@@ -1,0 +1,11 @@
+---
+title: "Notes"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+Next steps:
+
+1. Add permutation test, check if it breaks the pattern of EWS. Main test would be comparing the $\Delta$ statistic.
+2. Re-compute using the netCDF files, make sure it works on your machine.

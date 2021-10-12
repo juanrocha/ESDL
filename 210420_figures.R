@@ -197,7 +197,8 @@ ggsave(
   filename = "fig_detection_TER.png",
   path = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/paper/figures/",
   device = "png",
-  width = 7, height = 4, dpi = 400
+  width = 7, height = 4, dpi = 400,
+  bg = "white"
 )
 
 
