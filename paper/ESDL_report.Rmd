@@ -7,9 +7,9 @@ author: |
   | \small \texttt{\href{mailto:juan.rocha@su.se}{\nolinkurl{juan.rocha@su.se}}}
 abstract: |
   Ecosystems around the world are at risk of critical transitions due to increasing
-  anthropogenic pressures and climate change. Yet it is unclear where the risks are higher or where in the world ecosystems are more vulnerable. Here I measure resilience of primary productivity proxies for marine and terrestrial ecosystems globally. Up to 29% of global terrestrial ecosystem, and 24% marine ones, show symptoms of resilience loss. These symptoms are shown in all biomes, but by large Arctic tundra and boreal forest are the most affected, as well as the Indian Ocean and Eastern Pacific. Although the results are likely an underestimation, they enable the identification of risk areas as well as the potential synchrony of some transitions, and can can help prioritize areas for management interventions and conservation. 
-  
-  
+  anthropogenic pressures and climate change. Yet it is unclear where the risks are higher or where in the world ecosystems are more vulnerable. Here I measure resilience of primary productivity proxies for marine and terrestrial ecosystems globally. Up to 29% of global terrestrial ecosystem, and 24% marine ones, show symptoms of resilience loss. These symptoms are shown in all biomes, but by large Arctic tundra and boreal forest are the most affected, as well as the Indian Ocean and Eastern Pacific. Although the results are likely an underestimation, they enable the identification of risk areas as well as the potential synchrony of some transitions, helping prioritize areas for management interventions and conservation.
+
+
 output:
   pdf_document:
     dev: pdf
@@ -54,34 +54,36 @@ library(here)
 
 Ecosystems are prone to non-linear dynamics that can shift their function and
 structure from one configuration to another [@Scheffer:2009p4449;
-@Anonymous:2004bq]. Examples of such regime shifts include the transitions from
-forest to savannas [@Hirota:2011p7120], the collapse of coral reefs
+@Anonymous:2004bq]. Examples of such regime shifts include the transitions
+from forest to savannas [@Hirota:2011p7120], the collapse of coral reefs
 [@Hughes:2017bs], kelp forest to urchin barrens [@Ling:2015dra], peatland
 transitions [@Turetsky:2015fn], or the emergence of hypoxic dead zones in
-coastal systems [@Breitburg:2018iz; @Diaz:2008p199]. Over 30 different types of
-regime shifts at the ecosystem scale have been reported in the literature
+coastal systems [@Breitburg:2018iz; @Diaz:2008p199]. Over 30 different types
+of regime shifts at the ecosystem scale have been reported in the literature
 [@Biggs:2018hx]. Yet predicting when and where they will occur remains
 challenging for most ecosystems [@Dakos:2015jt]. Understanding the answer is
 deeply related to our ability to observe and measure resilience.
 
 Resilience is the ability of a system to withstand disturbances without losing
 its function, structure, and hence its identity [@Holling:1973p6861;
-@Anonymous:2016fv]. A plethora of metrics have been used to approximate
-resilience, yet the simplest and cross-system indicators used are based on
-recovery time [@Holling:1973p6861; @Scheffer:2009wl; @Arani:2021iv]. Time, being
-a common dimension to any dynamical system, lends itself for the development of
-generic proxies of resilience [@Scheffer:2009p4449]. Complex systems when close
-to critical transitions leave statistical signatures in the time series of its
-observables known as *critical slowing down* [@Strogatz:2014wo;
-@Scheffer:2012cta; @Scheffer:2009p4449]. It means that the system takes longer
-to recover after a small disturbance, which translates into increases in
-variance, autocorrelation, and skewness or flickering [@Scheffer:2009p4449;
-@Dakos:2015jt]. Similar indicators exist for spatial data which includes spatial
-correlations, discrete Fourier transforms, spatial variance, skewness, power
-spectrums, and patch-size distributions [@Kefi:2014dl]. These methods however
-have some limitations. They require long time series to detect useful signals
-[@Dakos:2015jt], and they can fail when regime shifts are driven by stochastic
-processes [@Hastings:2018gy; @Hastings:2010p5336].
+@Anonymous:2016fv]. Formally, it is the size of the system's basin of
+attraction [@Holling:1973p6861; @Clark:1975vj; @Krakovska:2021ea]. Several
+metrics have been used to approximate resilience including the depth of the
+basin, slope, distance to the threshold, probability of tipping, resistance,
+elasticity, among others [@Krakovska:2021ea]; yet the simplest and
+cross-system indicators used are based on recovery time [@Holling:1973p6861;
+@Scheffer:2009wl; @Arani:2021iv]. Complex systems when close to critical
+transitions leave statistical signatures in the time series of its observables
+known as *critical slowing down* [@Strogatz:2014wo; @Scheffer:2012cta;
+@Scheffer:2009p4449]. It means that the system takes longer to recover after a
+small disturbance, which translates into increases in variance, autocorrelation,
+and skewness or flickering [@Scheffer:2009p4449; @Dakos:2015jt]. Similar
+indicators exist for spatial data which includes spatial correlations, discrete
+Fourier transforms, spatial variance, skewness, power spectrums, and patch-size
+distributions [@Kefi:2014dl]. These methods however have some limitations.
+They require long time series to detect useful signals [@Dakos:2015jt], and
+they can fail when regime shifts are driven by stochastic processes
+[@Hastings:2018gy; @Hastings:2010p5336].
 
 Recent theoretical and empirical developments have addressed some of these
 limitations. On the theoretical front, *critical speeding up* has been proposed
@@ -89,27 +91,31 @@ as a suitable alternative to detect stochastically driven critical transitions
 [@Titus:2020hb]. While critical slowing down relies on the assumption that
 resilience loss is driven by a widening and depth loss of the current basin of
 attraction, critical speeding up assumes that the basin shrinks by narrowing the
-basin and possibly increasing its depth [@Titus:2020hb]. Both techniques pick up
-resilience loss by measuring changes in the higher moments of the time series
-distribution by detecting sudden increase (decrease) of variance,
-autocorrelation, skewness or kurtosis. Another proposed proxy of resilience is
-the fractal dimension [@West:2017wo; @West:2010db], which is an indication of
-self-similarity across scales. The fractal dimension is related to how adaptable
-a system is to perturbations, or how easily it finds modes to deal with
-disturbances, that has found applications in the diagnosis of cardiac disorders
-[@West:2017wo; @West:2010db] and engineering [@Pavithran:2021jc]. Exit time has
-also being proposed as a resilience indicator, it does however requires high
-resolution long time series with multiple shifts to render useful insights
-[@Arani:2021iv]. On the empirical realm, recent studies has pointed to remote
-sensing products [@Verbesselt:2016hn] and climate change simulations
-[@Bathiany:2020cl] as suitable high dimensional datasets for testing some of
-these tools in quantifying resilience.
+basin [@Titus:2020hb]. Both techniques pick up resilience loss by measuring
+changes in the higher moments of the time series distribution by detecting
+sudden increase (decrease) of variance, autocorrelation, skewness or kurtosis.
+Another proposed proxy of resilience is the fractal dimension [@West:2017wo;
+@West:2010db], which is an indication of self-similarity across scales. The
+fractal dimension is related to how adaptable a system is to perturbations, or
+how easily it finds modes to deal with disturbances, that has found applications
+in the diagnosis of cardiac disorders [@West:2017wo; @West:2010db] and
+engineering [@Pavithran:2021jc]. Exit time has also being proposed as a
+resilience indicator, it does however requires high resolution time series with
+multiple shifts to render useful insights [@Arani:2021iv]. Autoregressive
+state-space models and dynamic linear models are also proposed as alternatives
+to generic early warnings which could help circumbent some of their limitations
+by calculating changes on the leading eignvalue in time series, if $\lambda >1$
+the timeseries signals a loss of stability and resilience [@Ives:2012df;
+@Taranu:2018dg; @Carpenter:2013cr]. On the empirical realm, recent studies
+has pointed to remote sensing products [@Verbesselt:2016hn] and climate
+change simulations [@Bathiany:2020cl] as suitable high dimensional datasets
+for testing some of these tools in quantifying resilience.
 
 This paper aims to identify where regime shifts are likely to occur by detecting
-resilience loss in terrestrial and marine ecosystems primary productivity. It
-applies the traditional early warning signals based on critical slowing down;
-and adapts the methods to include critical speeding up metrics, and fractal
-dimension (See Methods). To that end, [gross primary
+signals of resilience loss in terrestrial and marine ecosystems primary
+productivity. It applies the traditional early warning signals based on critical
+slowing down; and adapts the methods to include critical speeding up metrics,
+and fractal dimension (See Methods). To that end, [gross primary
 productivity](http://www.fluxcom.org), terrestrial ecosystem respiration, and
 [chlorophyll-a concentration](https://esa-oceancolour-cci.org) were used as
 proxies of primary productivity of marine and terrestrial ecosystems. These
@@ -123,6 +129,14 @@ detect changes in slope and break points in the time series (Methods). A series
 of logistic and random forest regressions were used to gain insights into what
 is driving resilience loss in ecosystems world-wide.
 
+```{=tex}
+\begin{figure*}[ht]
+\centering
+\includegraphics[width = 7.2in, height = 3in]{figS_one_pixel_GPP}
+\caption{\textbf{Example with one pixel} Early warning signals for one pixel of the gross primary productivity dataset. A rolling window of half the length of the time series is used to calculate the dynamic indicators of resilience. $\Delta$ is the difference between maximum and minimum values, and the black points signal the break point of a segmented regression used to detect whether there are big jumps (increase or decrease) on the resilience indicators (A). (B) shows the coherence between resilience indicators across different datasets. They are labelled critical slowing down if both variance and autocorrelations increases, or speeding up if they decrease. If they contradict, they are labelled ambiguous. The same pixels can fill more than one early warning type, thus proportions can be > 1.}
+\label{fig:sm-onepxl}
+\end{figure*}
+```
 # Results
 
 ```{=tex}
@@ -133,6 +147,34 @@ is driving resilience loss in ecosystems world-wide.
 \label{fig:gpp}
 \end{figure*}
 ```
+The generic resilience indicators do not necessarily align with critical slowing
+down or speeding up theories. Fig \ref{fig:sm-onepxl} illustrates the analysis
+for one pixel where all indicators show signals of resilience loss. The time
+series is first pre-processed to remove confoudning factors such as seasonality
+or long term oscillations, log-transformed to reduce the influence of outliers
+or shock events, and centered to zero mean and unit variance (Methods). All time
+series were first-differenced and passed a root test that guarantees
+stationarity; in other words, if a signal is detected it is not the product of
+residual long-term trends or seasonal variation on the data. The generic
+indicators are then calculated by using a rolling window with length equivalent
+to 50% of the data. To detect changes in trends of the indicators we used three
+approaches. First, $\Delta$ captures the difference between the minimum and
+maximum values of the indicator over time. By itself $\Delta$ is not very
+informative unless one has its distribution for the entire planet to compare
+against. In the pixel described in Fig \ref{fig:sm-onepxl} the observed $\Delta$
+is indeed on the tail of the distribution for all indicators. Second, a linear
+regression was fitted to each indicator to test whether the slopes were
+different from zero, but it tends to treat sharp increases or decreases of the
+resilience indicators as outliers. Hence, the third approach was a segmented
+regression, enabling the detection of a point in time where there is a
+significant change on the slope of two linear regressions. The summary of the
+analysis for all pixels across all datasets shows that only in few cases
+autocorrelation and variance increase or decrease in tandem, the signatures of
+critical slowing down or speeding up. In contrast, large values of $\Delta$,
+interpreted here as symptoms of resilience loss, are detected in a number of
+different arrangments being them most common agreement between kurtosis and
+skewness (Fig \ref{fig:sm-gpp},\ref{fig:sm-ter}, \ref{fig:sm-mar}).
+
 Ecosystems world-wide are showing symptoms of resilience loss. The absolute
 difference in resilience indicators ($\Delta$) emphasizes jumps in the time
 series and enables comparison with normal variation adjusted to each biome type.
@@ -142,16 +184,23 @@ the extremes of the distributions (5% and 95% percentiles) of each resilience
 proxy reveal that all ecosystems are losing resilience, for some of them up to
 30% of their global area on the gross primary productivity or terrestrial
 ecosystem respiration data sets (Fig \ref{fig:sm-gpp}, \ref{fig:sm-ter}).
-
 Despite data incompleteness for marine ecosystems at high latitudes, some
 signals of resilience loss are detected in Arctic marine systems and the
 Southern Ocean (Fig \ref{fig:mar}, \ref{fig:sm-mar}). The Easter Indo-Pacific
 and Tropical Easter Pacific Oceans are the marine biomes with larger areas
 showing symptoms of resilience loss (Fig \ref{fig:mar}). The high oceans,
 however, show by far the larger areas affected with hot spots outside the
-Caribbean basin in the Tropical Atlantic, the Tropical Pacific and south west
+Caribbean basin in the Tropical Atlantic, the Tropical Pacific and south east
 Madagascar.
 
+```{=tex}
+\begin{figure*}[ht]
+\centering
+\includegraphics[width = 7in, height = 4in]{fig_detection_marine}
+\caption{\textbf{Resilience loss in marine realms} Detection of resilience loss using chlorophyll-A as proxy of primary productivity (A). B) shows the global aggregate of resilience loss, C) shows aggregated proportion of area per marine realm, while D) shows are in 0.25 degree pixels. Maps for each resilience indicator are provided in Fig \ref{fig:sm-mar}.}
+\label{fig:mar}
+\end{figure*}
+```
 Symptoms of resilience loss are coherent in space and time. Although the
 analysis was done independently for each time series and variable, spatial
 aggregation and coincidence of break points in time suggest that the signals are
@@ -169,30 +218,83 @@ possible shifting of basin of attraction or dynamic transients
 ```{=tex}
 \begin{figure*}[ht]
 \centering
-\includegraphics[width = 7in, height = 4in]{fig_detection_marine}
-\caption{\textbf{Resilience loss in marine realms} Detection of resilience loss using chlorophyll-A as proxy of primary productivity (A). B) shows the global aggregate of resilience loss, C) shows aggregated proportion of area per marine realm, while D) shows are in 0.25 degree pixels. Maps for each resilience indicator are provided in Fig \ref{fig:sm-mar}.}
-\label{fig:mar}
+\includegraphics[width = 7in, height = 7in]{figS_permutations}
+\caption{\textbf{Permutations tests over time} A sample of 500 pixels where resilience loss was detected by at least three indicators is compared against 5000 permutations of the same time series (10 permutations each). A Wilconxon two sided test confirms differences in mean between the real and permuted time series (p << 0.05 for all comparisons).}
+\label{fig:perms}
 \end{figure*}
 ```
-Signals of resilience loss, however, do not conform neatly with slowing down or
-speeding up theories. Only a minority of places show consistent increase or
-decrease in variance and autocorrelation (Fig \ref{fig:sm-gpp},
-\ref{fig:sm-ter}, \ref{fig:sm-mar}). Lack of consistency between signals
-suggests that there is no one preferred theory at place. But instead, multiple
-drivers are interacting in pushing ecosystems outside their realm of stability
-[@Dai:2015dwa], some of them through increasing stochasticity while others
-through slow forcing. To test that hypothesis, I used logistic regressions and
-random forests to investigate what is driving the detection of early warnings.
-Detection by at least two proxies of resilience loss was used as response
-variable. Explanatory variables for terrestrial ecosystems included time series
-of temperature, precipitation, burned area, and land cover. For marine systems,
-the explanatory variables were restricted to sea surface temperature and sea
-surface salinity. Variables with long and frequent time series (temperature,
-salinity and precipitation) were filtered with a Fourier transform to test
-whether the signals are predicted by long term variation, annual cycles, fast
-oscillations or the linear (slow) trends. All regressions used a stratified
-sampling design, balanced on detection, and with fixed effects per biomes or
-marine realm respectively (See Method).
+An alternative interpretation for coherence of signals is spatial and temporal
+autocorrelations, or that they are merely responses to shocks on environmental
+variables. Potential issues of temporal autocorrelation were dealt with by
+processing the data to the point that the remaining time series were stationary
+[@ives2021statistical]. Issues of spatial autocorrelation are dealt (below) by
+fitting explanatory models and subsampling in space, while introducing fixed
+effects for geography related variables (biome, latitude, longitude). To further
+test the robustness of the signals, a subsample of time series of detected
+places (N = 500) were compared against the same time series but with the order
+of observations changed (10 permutations per time series, 5000 permutations).
+When the ordering of observations is lost, the signal of resilience loss
+dissapears, meaning it has e.g. a signficantly lower autocorrelation and
+standard deviation on the absolute value scale (Fig \ref{fig:perms}). A Wilcoxon
+two sided test comparing the distributions of permutations agains observed data
+suggest that the means are indeed different (p \<\< 0.05 for all comparisons).
+Thus the results are not merely noise induced by outliers (e.g. shocks) because
+the same time series with the same outliers but different ordering does not rise
+the early warnings to the same extend that the observed data. On the contrary,
+for some statistics like autocorrelation and standard devitation, their delta
+values go back to what is expected to be normal (the global median).
+
+An additional robustness test is comparing the generic indicators agains
+model-based early warnings. The latter are autoregressive dynamic linear models
+that enable fitting coefficients that change over time, in particular the
+approximation of the leading eigenvalue of the system $\lambda$ [@Ives:2012df;
+@Taranu:2018dg; @Carpenter:2013cr]. For each dataset a sample of a hundred
+pixels was randomly drawn for detected places with at least three different
+resilience indicators, and compared against places that showed no early warning
+(Fig \ref{fig:lambda}). Model-based indicators showed resilience loss for at
+least half of the sample of chlorophyll A and a third of the sample of gross
+primary productivity. For places where $\lambda < 0$ the distribution still
+shows a displacement towards one when compared to places with no signals. For
+terrestrial ecosystem respiration however, model-based early warnings do not
+support the patterns found by the generic indicators.
+
+```{=tex}
+\begin{figure*}[ht]
+\centering
+\includegraphics[width = 7.3in, height = 3in]{lambda_plots}
+\caption{\textbf{Model-based indicators} A sample of 100 pixels where resilience loss was detected by at least three indicators is compared against 100 pixels where no signals were detected. The leading eignevalue of the system is approximated with a dynamic linear autoregressive model}
+\label{fig:lambda}
+\end{figure*}
+```
+If resilience is approximated as the size of the basin of attraction, critical
+slowing down picks up reductions in depth while critical speeding up is sensible
+to reductions in width. However, these theories when applied to ecological
+problems are typically dealt as low dimensional models with perhaps one
+controlling factor, one driver. Recent experimental evidence suggest that when
+ecosystems are subject to multiple drivers, early warning indicators can fail or
+provide contradictory signals [@Dai:2015dwa]. Lack of consistency between
+signals suggests that there is no one preferred theory at place. But instead,
+multiple drivers are interacting in pushing ecosystems outside their realm of
+stability, some of them through increasing stochasticity while others through
+slow forcing.
+
+To test that hypothesis, I used logistic regressions and random forests to
+investigate what is driving the detection of early warnings. Detection by at
+least two proxies of resilience loss was used as response variable. Explanatory
+variables for terrestrial ecosystems included time series of temperature,
+precipitation, burned area, and land cover. For marine systems, the explanatory
+variables were restricted to sea surface temperature and sea surface salinity.
+Variables with long and frequent time series (temperature, salinity and
+precipitation) were filtered with a Fourier transform to test whether the
+signals are predicted by long term variation, annual cycles, fast oscillations
+or the linear (slow) trends. All regressions used a stratified sampling design,
+balanced on detection, and with fixed effects per biomes or marine realm
+respectively (See Method). The subsampling is necessary to control for two
+sources of bias. First, it breaks biases induced by spatial autocorrelation and
+the potential inflation of effects or small standard errors
+[@ives2021statistical]. Second, it reduces bias by a relatively larger amount of
+pixels were resilience loss is not detected, or by biomes that naturally have
+larger areas.
 
 The strongest predictors of resilience loss are indeed a combination of slow
 forcing and stochasticity in environmental variables such as temperature,
@@ -201,23 +303,31 @@ temperature, mean precipitation and variability in fast oscillations and annual
 cycles are the strongest predictors, while marine realms are predicted by mean
 temperature, mean salinity and their variability at different time scales (Fig
 \ref{fig:reg}). The logistic regression facilitates a relatively straightforward
-interpretation [@Kuhn:2013vn]. Once geography and biome type has been controlled
-for, the reminder coefficients indicate what increases the odds of detecting
-resilience loss. However, this linear approach suffers from correlations in the
-predictors, namely the different time scales at which the hypothesis needs to be
-tested, whether it is slow forcing or stochasticity at different time scales
-what drives the signals. In fact, the predicting accuracy for the logistic
-regression is poor (area under the receiver operating characteristic curve ROC
-0.71, 0.65 and 0.59 for gross primary productivity, terrestrial ecosystem
-respiration and chlorophyll A respectively). The random forest approach leads to
-higher predictive power (ROC 0.893, 0.874, 0.827 respectively). It is robust to
-potential correlations and required less pre-processing for feature engineering,
-but is less amenable to interpretation [@Kuhn:2013vn]. It reveals which
-variables improve predictions but not necessarily in which direction they are
-affecting resilience loss. The results of both approaches confirm the hypothesis
-that resilience loss is driven by a combination of slow forcing and
-stochasticity on potential drivers.
+interpretation [@Kuhn:2013vn]. Once geography and biome type has been
+controlled for, the reminder coefficients indicate what increases the odds of
+detecting resilience loss. However, this linear approach suffers from
+correlations in the predictors, namely the different time scales at which the
+hypothesis needs to be tested, whether it is slow forcing or stochasticity at
+different time scales what drives the signals. In fact, the predicting accuracy
+for the logistic regression is poor (area under the receiver operating
+characteristic curve ROC 0.71, 0.65 and 0.59 for gross primary productivity,
+terrestrial ecosystem respiration and chlorophyll A respectively). The random
+forest approach leads to higher predictive power (ROC 0.893, 0.874, 0.827
+respectively). It is robust to potential correlations and required less
+pre-processing for feature engineering, but is less amenable to interpretation
+[@Kuhn:2013vn]. It reveals which variables improve predictions but not
+necessarily in which direction they are affecting resilience loss. The results
+of both approaches confirm the hypothesis that resilience loss is driven by a
+combination of slow forcing and stochasticity on potential drivers.
 
+```{=tex}
+\begin{figure*}[ht]
+\centering
+\includegraphics[width = 7in, height = 7in]{fig_regressions_combined}
+\caption{\textbf{Predictors of resilience loss} Logistic regressions to predict signals of resilience loss in gross primary productivity, terrestrial ecosystem respiration (A), and chlorophyll A (C). The strongest predictors of the random forest for terrestrial systems (B) and marine realms (D) were calculated with a permutation method. All random forest fitted 1000 trees. The best model for gross primary productivity targeted node size 10 and 12 variables to split at each node (N = 31122, OOB error 0.13), 20 node size and 9 variables for terrestrial ecosystem respiration (N = 29546, OOB error 0.14), and 20 node size and 9 variables for chlorophyll A (N = 54298, OOB error 0.16). }
+\label{fig:reg}
+\end{figure*}
+```
 # Discussion
 
 Resilience is the ability of any system to deal with change while keeping its
@@ -229,16 +339,16 @@ dimension as collection of behaviors available to deal with disturbance
 dimensions of resilience such as the size of the basin of attraction, the amount
 of disturbance that the system can stand, the mean return time, the distance to
 tipping points and thresholds, or adaptive and transformative capacities
-[@Krakovska:2021ea; @Anonymous:2016fv]. The indicators here used can be seen as
-symptoms of instabilities being developed on the time series of primary
-productivity for global ecosystems over the past two decades. The symptoms
-however do not imply imminent critical transitions, but help identify places
-where their probability is increasing given the limitations of the data. The
-data is relatively short to account for critical transitions in the biosphere,
-yet it is one of the best observational records to approximate resilience
-globally. These symptoms are necessary but not sufficient evidence of unfolding
-regime shifts. Yet, the analysis here presented enables the identification of
-areas vulnerable to regime shifts at a scale relevant to decision makers.
+[@Krakovska:2021ea; @Anonymous:2016fv]. The indicators here used can be seen
+as symptoms of instabilities being developed on the time series of primary
+productivity for global ecosystems over the past two decades. The symptoms do
+not imply imminent regime shifts, they help identify places where their
+probability is increasing given the limitations of the data. The data is
+relatively short to account for critical transitions in the biosphere, yet it is
+one of the best observational records to approximate resilience globally. These
+symptoms are necessary but not sufficient evidence of unfolding regime shifts.
+Yet, the analysis here presented enables the identification of areas vulnerable
+to regime shifts at a scale relevant to decision makers.
 
 Globally 29% of terrestrial biomes and 24% of marine realms show signals of
 resilience loss in at least one of the indicators used (Fig. \ref{fig:gpp},
@@ -246,22 +356,22 @@ resilience loss in at least one of the indicators used (Fig. \ref{fig:gpp},
 recent reports documenting ecosystems' degradation worldwide. Forests are
 becoming more vulnerable to droughts, and the combined effects with increasing
 fire frequency are exposing them to major diebacks expected by mid-century
-[@Williams:2013iy]. Temperature thresholds for terrestrial primary productivity
-have been identified [@Duffy:2021br; @Johnston:2021fg] where carbon uptake is
-potentially degraded (sink to source transition). Less than 10% of the
-terrestrial biosphere has already crossed the threshold, and under business as
-usual scenarios, half of the biosphere is expected to cross these thresholds by
-the end of the century, with the most affected areas being Canadian and Russian
-boreal taigas as well as the Amazon and South East Asia rainforests
-[@Duffy:2021br]. These are biomes where strongest signals of resilience loss
-were detected with a right shift on the distribution of $\Delta$. Other studies
-quantifying terrestrial ecosystems' resilience with NDVI data also show strong
-signals from tundra and boreal forests [@Feng:2021gr]. A recent quantification
-of aridity thresholds shows that up to 28.6% of current dryland area can cross
-these thresholds by 2100 for the most drastic climate scenarios
-[@Berdugo:2020kk]. The results here presented confirm early warning signals of
-resilience loss in drylands as well, particularly with the fractal dimension,
-skewness and kurtosis (Fig. \ref{fig:sm-gpp}, \ref{fig:sm-ter}).
+[@Williams:2013iy]. Temperature thresholds for terrestrial primary
+productivity have been identified [@Duffy:2021br; @Johnston:2021fg] where
+carbon uptake is potentially degraded (sink to source transition). Less than 10%
+of the terrestrial biosphere has already crossed the threshold, and under
+business as usual scenarios, half of the biosphere is expected to cross these
+thresholds by the end of the century, with the most affected areas being
+Canadian and Russian boreal taigas as well as the Amazon and South East Asia
+rainforests [@Duffy:2021br]. These are biomes where strongest signals of
+resilience loss were detected with a right shift on the distribution of
+$\Delta$. Other studies quantifying terrestrial ecosystems' resilience with NDVI
+data also show strong signals from tundra and boreal forests [@Feng:2021gr].
+A recent quantification of aridity thresholds shows that up to 28.6% of current
+dryland area can cross these thresholds by 2100 for the most drastic climate
+scenarios [@Berdugo:2020kk]. The results here presented confirm early warning
+signals of resilience loss in drylands as well, particularly with the fractal
+dimension, skewness and kurtosis (Fig. \ref{fig:sm-gpp}, \ref{fig:sm-ter}).
 
 The marine patterns here presented also align with previous studies. Deepening
 of the ocean's mixed layer can decrease light conditions near surface,
@@ -272,23 +382,24 @@ stratification [@Sallee:2021ju]. Upwelling systems are also hot-spots where
 resilience loss is identified. Upwelling strenght is expected to change with
 climate change, with strengthening already reported in the California and
 Benguela currents, while weakening in the Iberian-Canary system
-[@Sydeman:2014dh]. Upwelling weakening can limit nutrients in marine food webs,
-while strengthening can over enrich nutrients, and facilitate the onset of
-oxygen minimum zones [@Breitburg:2018iz]. Our results present an additional line
-of support that these systems are being destabilized.
+[@Sydeman:2014dh]. Upwelling weakening can limit nutrients in marine food
+webs, while strengthening can over enrich nutrients, and facilitate the onset of
+oxygen minimum zones [@Breitburg:2018iz]. Our results present an additional
+line of support that these systems are being destabilized.
 
 The results are limited by the temporal and spatial scale of the available data.
 If the grain of the data is not frequent enough to match fast dynamics, long
-enough to capture change in slow processes [@Arani:2021iv; @Scheffer:2009p4449;
-@Dakos:2015jt], or the spatial resolution is too coarse, local transitions in
-space and time can be missed. This is the case with hypoxic areas, where large
-oxygen minimum zones are identified, but not the diverse range of local cases
-previously reported [@Breitburg:2018iz]. Only regime shifts that are drastic
-enough to change primary productivity as observed from remote sensing products
-can be identified. Regime shifts that impact specific populations or community
-assemblies without changing primary productivity are missed. Such is the case of
-coral transitions in the Great Barrier Reef where \~50% of the reef community
-collapsed following the heatwave events of 2016-17 [@Hughes:2018ba].
+enough to capture change in slow processes [@Arani:2021iv;
+@Scheffer:2009p4449; @Dakos:2015jt], or the spatial resolution is too coarse,
+local transitions in space and time can be missed. This is the case with hypoxic
+areas, where large oxygen minimum zones are identified, but not the diverse
+range of local cases previously reported [@Breitburg:2018iz]. Only regime
+shifts that are drastic enough to change primary productivity as observed from
+remote sensing products can be identified. Regime shifts that impact specific
+populations or community assemblies without changing primary productivity are
+missed. Such is the case of coral transitions in the Great Barrier Reef where
+\~50% of the reef community collapsed following the heatwave events of 2016-17
+[@Hughes:2018ba].
 
 Because of these limitations, the results likely are an underestimation. The
 estimates are also conservative, with an arbitrary 5% and 95% quantile of the
@@ -296,31 +407,91 @@ $\Delta$ distribution as detection threshold. A lower cutoff would enlarge the
 areas were resilience loss is detected, but also increase the risk of false
 positives. A similar study using NDVI data estimated up to \~65% of terrestrial
 ecosystems show early warning of critical transitions, with strong bias towards
-boreal forest and taiga [@Feng:2021gr]. The estimates here presented complement
-previous efforts [@Feng:2021gr; @Verbesselt:2016hn] in taking into consideration
-fixed effects by biome and a pre-processing technique that removes seasonality
-and long term variations that can lead to errors, or bias towards high variable
-environments (higher latitudes).
+boreal forest and taiga [@Feng:2021gr]. The estimates here presented
+complement previous efforts [@Feng:2021gr; @Verbesselt:2016hn] in taking
+into consideration fixed effects by biome and a pre-processing technique that
+removes seasonality and long term variations that can lead to errors, or bias
+towards high variable environments (higher latitudes).
 
-Despite its limitations, this first-order approximation to resilience loss can
-help outline priority areas for management. Russia, Canada, the US and Australia
-are countries with the largest areas of resilience loss identified, yet by
-proportion of territory, small island states top the ranking. When accounting
-for the diversity of ecosystems showing signs of resilience loss, megadiverse
-countries like Brazil, India, Mexico, Indonesia, Australia or Colombia are on
-the top 10 (Fig \ref{fig:sm-countries}). Australia has recently been reported as
-a hotspot for ecological collapses for both marine and terrestrial ecosystems
-[@Bergstrom:2021ey]. The spatial resolution of the maps here presented enable
-countries, regions, and even municipalities to update land use planning and take
-into consideration the vulnerability of their ecosystems. Companies for example,
-can take such risk into account when deciding on relocation, resource
-outsourcing, or investments. Countries and municipalities can balance the
-trade-off between maximizing a particular ecosystem service (e.g. a monoculture)
-in favour of multifunctional landscapes that include other values such as
-recreation, spiritual values, or conservation. No matter the scale, we all have
-a role to play in caring for ecosystems resilience and maintaining their ability
-to provide the ecosystem services we all depend on.
+Another limitation of this study is the lack of ground truth. The results
+provide a spatial prediction of where ecosystems might be lossing their
+resilience. But since critical transitions have not happened yet in many of
+these places, it is not possible to contrast the models here presented with
+their real predicting power. Current databases that track such transitions are
+biased to studies and observations on the global north and coastal ecosystems
+[@Breitburg:2018iz; @Biggs:2018hx], their coverage is not yet sufficient to
+be used as ground truth across all ecosystems and biomes. Nevertheless, the
+robustness of the signals detected were tested against null permutation models
+and model-based early warnings. The first test showed the signals are not an
+artifact of the data, potential temporal autocorrelation was dealt with
+stringent data pre-processing and randomizing the ordering of observations. The
+second test supported our findings for chlorophyll A and gross primary
+productivity, but fail in supporting the findings of terrestrial ecosystem
+respiration.
 
+Model-based approaches such autoregressive time varying models can help
+interpreting the results and robustness of generic indicators [@Ives:2012df;
+@Taranu:2018dg; @Carpenter:2013cr]. In this study, these methods gave
+stronger confidence to the results from gross primary productivity and less
+support to terrestrial ecosystem respiration derived signals, although both
+results qualitatively point to the same patterns. The combination of methods
+thus help distinguish what are optimal observables of resilience loss, an open
+question and possibly a fruitful avenue for future research [@Dakos:2015jt].
+Unfortunately model-based methods are computationally expensive and do not scale
+up to the data requirements of remote sensing products, on the order of $10^5$
+to $10^7$ spatial pixels (depending on spatial resolution) times time series
+length. Generic indicators are still useful in narrowing down the scope at which
+computationally expensive methods become practical.
+
+Computing the probability density function of $\Delta$ helps interpreting
+signals of resilience loss. Previous work using generic indicators typically
+have ground truth in the form of modeling simulations with some noise or actual
+experiements. Because the ground truth is known, there was not concern whether
+the magnitud of increase (decrease) in early warnings was big enough to actually
+be considered a warning. Here we do not have ground truth as in experiments, but
+we can compute the distribution of each indicator for the entire planet enabling
+the comparison of what consitutes a big jump on an indicator as opposed to its
+normal expected variability for each biome. The magnitud depends on the
+indicator and data pre-processing choices, but the position of the pixel in the
+distribution is relatively unnafected. Thus $\Delta$ is less sensitive to
+pre-processing choices. While in theory increases or decreases on a particular
+statistic can be interpreted as resilience loss (an apparent contradiction), the
+distribution of $\Delta$ helps interpreting whether an increase or decrease is
+towards the tails of the distribution (resilience loss) as opposed to a an
+increase or decrease towards the center of the distribution (a resilience gain).
+The fractal dimension here introduced is unambiguous and do not depend on scale,
+for time series it is bounded between 1 and 2 and higher values are always more
+resilient [@West:2017wo; @Gneiting:2012be]. Future studies can use these two
+facts to track ecological recovery.
+
+Despite of its limitations, this first-order approximation to resilience loss
+can help outline priority areas for management. Russia, Canada, the US and
+Australia are countries with the largest areas of resilience loss identified,
+yet by proportion of territory, small island states top the ranking. When
+accounting for the diversity of ecosystems showing signs of resilience loss,
+megadiverse countries like Brazil, India, Mexico, Indonesia, Australia or
+Colombia are on the top 10 (Fig \ref{fig:sm-countries}). Australia has recently
+been reported as a hotspot for ecological collapses for both marine and
+terrestrial ecosystems [@Bergstrom:2021ey]. The spatial resolution of the
+maps here presented enable countries, regions, and even municipalities to update
+land use planning and take into consideration the vulnerability of their
+ecosystems. Companies for example, can take such risk into account when deciding
+on relocation, resource outsourcing, or investments. Countries and
+municipalities can balance the trade-off between maximizing a particular
+ecosystem service (e.g. a monoculture) in favour of multifunctional landscapes
+that include other values such as recreation, spiritual values, or conservation.
+No matter the scale, we all have a role to play in caring for ecosystems
+resilience and maintaining their ability to provide the ecosystem services we
+all depend on.
+
+```{=tex}
+\begin{figure*}[ht]
+\centering
+\includegraphics[width = 5in, height = 4in]{fig_countries}
+\caption{\textbf{Most affected countries} Top 10 countries by aggregated area in 0.25 degree pixels showing symptoms of resilience loss and as proportion of their territory (A). Countries ranked in (B) by the number of unique ecosystems showing symptoms of resilience loss and their proportion of territory impacted. }
+\label{fig:sm-countries}
+\end{figure*}
+```
 Future global resilience assessments could benefit from other data streams,
 particularly other anthropogenic drivers here overlooked. Additional data would
 however require long time series coverage and high spatial resolution. The
@@ -329,8 +500,8 @@ non-linear approaches such as deep neural networks or other machine learning
 techniques [@Reichstein:2019ii]. However, these approaches have limited
 interpretability and often require manually annotated datasets to measure
 performance. Qualitative efforts such as the Global Ocean Oxygen Network
-[@Breitburg:2018iz] or the Regime Shifts Database [@Biggs:2018hx] can provide
-the annotated examples to train such models. A spatially explicit map of
+[@Breitburg:2018iz] or the Regime Shifts Database [@Biggs:2018hx] can
+provide the annotated examples to train such models. A spatially explicit map of
 resilience loss can also help quantify the risk of cascading effects in
 ecosystems previously identified [@Rocha:2018gn]. As new Earth observations
 become available, these global maps can be updated and track how ecosystems
@@ -344,8 +515,8 @@ observatory.
 ecosystem respiration (both in $gCm^{-2}d^{-1}$), and [chlorophyll-a
 concentration](https://esa-oceancolour-cci.org) ($mgm^{-3}$) were used as
 proxies of primary productivity of terrestrial and marine ecosystems
-respectively [@Jung:2019hr; @bg-13-4291-2016; @Sathyendranath:2019hs]. Although
-these data sets are freely available through the FLUXCOM initiative
+respectively [@Jung:2019hr; @bg-13-4291-2016; @Sathyendranath:2019hs].
+Although these data sets are freely available through the FLUXCOM initiative
 (<http://www.fluxcom.org>) or the European Space Agency Climate Change
 innitiative (<https://climate.esa.int/>), the versions of the data used here
 were harmonized by the [Earth System Data
@@ -405,10 +576,10 @@ Outliers are here defined as places where $\Delta$ is unusually extreme, either
 above the 95% or below the 5% quantiles of $\Delta$ distribution.
 
 To check for the spatial and temporal coherence across time series, a segmented
-regression [@Muggeo:2003go] was used to identify the breaking point at which the
-early warning is detected. The segmented regression departed from a linear fit
-of the resilience proxy against time, the median of the indicator was used as
-starting value, and only one break point was calculated by default. A Davis
+regression [@Muggeo:2003go] was used to identify the breaking point at which
+the early warning is detected. The segmented regression departed from a linear
+fit of the resilience proxy against time, the median of the indicator was used
+as starting value, and only one break point was calculated by default. A Davis
 tested for the significant difference in slopes before and after the breaking
 point. Since the time series are normalized, the expectation is no difference in
 variance and hence no detection of breaking points. If there is a breaking point
@@ -499,14 +670,6 @@ Forum.
 ```{=tex}
 \begin{figure*}[ht]
 \centering
-\includegraphics[width = 7.2in, height = 3in]{figS_one_pixel_GPP}
-\caption{\textbf{Example with one pixel} Early warning signals for one pixel of the gross primary productivity dataset. A rolling window of half the length of the time series is used to calculate the dynamic indicators of resilience. $\Delta$ is the difference between maximum and minimum values, and the black points signal the break point of a segmented regression used to detect whether there are big jumps (increase or decrease) on the resilience indicators (A). (B) shows the coherence between resilience indicators across different datasets. The are labelled critical slowing down if both variance and autocorrelations increases, or speeding up if they decrease. If they contradict, they are labelled ambiguous. The same pixels can fill more than one early warning type, thus proportions can be > 1.}
-\label{fig:sm-onepxl}
-\end{figure*}
-```
-```{=tex}
-\begin{figure*}[ht]
-\centering
 \includegraphics[width = 7in, height = 4in]{fig_detection_TER}
 \caption{\textbf{Terrestrial ecosystem respiration} Detection of resilience loss in terrestrial biomes for terrestrial ecosystem respiration. A) shows where are biomes showing symptoms of resilience loss,  B) shows the global aggregate, C) shows aggregated proportion of area per biome, while C) shows area in 0.25 degree pixels.}
 \label{fig:ter}
@@ -558,21 +721,5 @@ Forum.
 \includegraphics[width = 5in, height = 4in]{sm_temporal_correlogram}
 \caption{\textbf{Temporal correlations} Correlations in time of resilience indicators across datasets: gross primary productivity (GPP), terrestrial ecosystem respiration (TER), and chlorophyll A (ClorA)}
 \label{fig:sm-temp-cor}
-\end{figure*}
-```
-```{=tex}
-\begin{figure*}[ht]
-\centering
-\includegraphics[width = 7in, height = 7in]{fig_regressions_combined}
-\caption{\textbf{Predictors of resilience loss} Logistic regressions to predict signals of resilience loss in gross primary productivity, terrestrial ecosystem respiration (A), and chlorophyll A (C). The strongest predictors of the random forest for terrestrial systems (B) and marine realms (D) were calculated with a permutation method. All random forest fitted 1000 trees. The best model for gross primary productivity targeted node size 10 and 12 variables to split at each node (N = 31122, OOB error 0.13), 20 node size and 9 variables for terrestrial ecosystem respiration (N = 29546, OOB error 0.14), and 20 node size and 9 variables for chlorophyll A (N = 54298, OOB error 0.16). }
-\label{fig:reg}
-\end{figure*}
-```
-```{=tex}
-\begin{figure*}[ht]
-\centering
-\includegraphics[width = 5in, height = 4in]{fig_countries}
-\caption{\textbf{Most affected countries} Top 10 countries by aggregated area in 0.25 degree pixels showing symptoms of resilience loss and as proportion of their territory (A). Countries ranked in (B) by the number of unique ecosystems showing symptoms of resilience loss and their proportion of territory impacted. }
-\label{fig:sm-countries}
 \end{figure*}
 ```

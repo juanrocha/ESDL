@@ -65,7 +65,7 @@ early_warning <- function(x, window){
                 gpp_1d, sd, na.rm = TRUE, .before = window, .after = 0, .complete = TRUE),
             ews_ac1 = slide_dbl(
                 gpp_1d,
-                function(x) cor(x,lag(x,1), use = "pairwise.complete.obs", "kendall"),.before = window, .after = 0, .complete = TRUE),
+                function(x) cor(x,lag(x,1), use = "pairwise.complete.obs", "pearson"),.before = window, .after = 0, .complete = TRUE), # turned back to pearson, kendall does not work better
             ews_kur = slide_dbl(
                 gpp_1d, moments::kurtosis, na.rm = TRUE, .before = window, .after = 0, .complete = TRUE),
             ews_skw = slide_dbl(

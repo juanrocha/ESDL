@@ -1189,3 +1189,134 @@ px_results %>%
 
 
 #### for writing ####
+
+
+#### Permutation tests ####
+load("Results/perm_results_chlorA_211101.RData")
+prm_clo <- test_all |> 
+    mutate(variable = "Chlorophyll A")
+load("Results/perm_results_GPP_211101.RData")
+prm_gpp <- test_all |> 
+    mutate(variable = "Gross Primary Productivity")
+load("Results/perm_results_TER_211101.RData")
+prm_ter <- test_all |> 
+    mutate(variable = "Terrestrial Ecosystem Resipiration")
+
+prm_df <- bind_rows(prm_clo, prm_gpp, prm_ter) 
+
+prm_df |>
+    mutate(ews = case_when(
+        ews == "ews_ac1" ~ "Autocorrelation lag-1",
+        ews == "ews_fd" ~ "Fractal dimension",
+        ews == "ews_kur" ~ "Kurtosis",
+        ews == "ews_skw" ~ "Skewness",
+        ews == "ews_std" ~ "Standard deviation"
+    )) |> 
+    mutate(ews = as_factor(ews), 
+           ews = fct_relevel(ews, "Standard deviation"),
+           ews = fct_relevel(ews, "Fractal dimension", after = Inf)) |> 
+    ggplot(aes(perm, abs_delta)) +
+    geom_boxplot(aes(color = variable, fill = variable, alpha = real), 
+                 show.legend = FALSE, size = 0.5, outlier.size = 0.5) +
+    facet_wrap(ews ~ variable, scales = "free", ncol = 3) +
+    scale_alpha_discrete(range = c(0.2, 0.8)) +
+    labs(x = "Permutations", y = expression(paste("|", Delta, "|"))) +
+    theme_light()
+
+ggsave(
+    plot = last_plot(),
+    filename = "figS_permutations.png",
+    path = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/paper/figures/",
+    device = "png",
+    width = 7, height = 7, dpi = 400
+)
+
+## for writing: all text show that the mean between real and permutations is not the same, the difference is not equal to zero, all p-values < 0.05
+prm_df |> 
+    split(~ews*variable) |>
+    map(~wilcox.test(abs_delta ~ real, data = .))
+
+#### MARSS results ####
+# create a function to recover the summary 
+extract_summary <- function(x){# x is the output dataframe from the lambda analysis
+    y <- x |>
+        mutate(col = case_when(
+            lamda-lamda.se > 1 ~ "L2",
+            lamda > 1 & lamda-lamda.se <1 ~ "L1",
+            TRUE ~ "L0"
+        )) |>
+        group_by(group) |>
+        summarize(
+            lamda_cats = case_when(
+                any(col == "L2") ~ "L2",
+                any(col == "L1") & all(col != "L2") ~ "L1",
+                all(col == "L0") ~ "L0"
+            ),
+            lamda_points = sum(lamda>1, na.rm = TRUE),
+            max_lamda = max(lamda, na.rm = TRUE)) #|> 
+        # arrange(desc(lamda_points)) |>
+        # print(n = 100)
+    return(y)
+}
+
+
+
+load("Results/211108_lambda_chlorA_detected.RData")
+chlo1 <- extract_summary(out) |> 
+    add_column(variable = "Chlorophyll A", detected = TRUE)
+load("Results/211108_lambda_chlorA_non-detected.RData")
+chlo2 <- extract_summary(out) |> 
+    add_column(variable = "Chlorophyll A", detected = FALSE)
+load("Results/211108_lambda_gpp_detected.RData")
+gpp1 <- extract_summary(out) |> 
+    add_column(variable = "Gross Primary\n Productivity", detected = TRUE)
+load("Results/211108_lambda_gpp_non-detected.RData")
+gpp2 <- extract_summary(out) |> 
+    add_column(variable = "Gross Primary\n Productivity", detected = FALSE) 
+load("Results/211108_lambda_ter_detected.RData")
+ter1 <- extract_summary(out) |> 
+    add_column(variable = "Terrestrial Ecosystem\n Respiration", detected = TRUE)
+load("Results/211108_lambda_ter_non-detected.RData")
+ter2 <- extract_summary(out) |> 
+    add_column(variable = "Terrestrial Ecosystem\n Respiration", detected = FALSE)
+
+df_all <- bind_rows(chlo1, chlo2, gpp1, gpp2, ter1, ter2)
+rm(chlo1, chlo2, gpp1, gpp2, ter1, ter2, out)
+
+a <- df_all |> 
+    ggplot(aes(detected)) +
+    geom_bar(aes(fill = lamda_cats), position = "stack") +
+    facet_wrap(~ variable) +
+    scale_fill_brewer(
+        expression(lambda), palette = "Set2", 
+        labels = expression(lambda < 1, lambda > 1,  lambda - s.e >1)) +
+    labs(x = "Detected", y = "Number of pixels tested", tag = "A") +
+    theme_light(base_size = 6) +
+    theme(legend.position = c(0.86, 0.8), legend.key.size = unit(0.25, "cm"),
+          legend.background = element_rect(fill = alpha("white", 0.5)))
+
+b <- df_all |> 
+    ggplot(aes(detected, max_lamda)) +
+    geom_boxplot(color = "grey50", fill = "gray50", alpha = 0.5) +
+    geom_hline(yintercept = 1, color = "orange", linetype = 2) +
+    facet_wrap(~variable) +
+    labs(x = "Detected", y = expression(lambda[Max]), tag = "B") +
+    theme_light(base_size = 6)
+
+c <- df_all |> 
+    ggplot(aes(detected, lamda_points)) +
+    geom_boxplot(color = "grey50", fill = "gray50", alpha = 0.5) +
+    facet_wrap(~variable)+
+    labs(x = "Detected", y = expression(paste("Number of points with ", lambda > 1)), tag = "C") +
+    theme_light(base_size = 6)
+
+a + b + c
+
+ggsave(
+    filename = "lambda_plots.png",
+    plot = (a + b + c) ,
+    device = "png",
+    path = "paper/figures/",
+    dpi = 300, width = 7.3, height = 3, bg = "white"
+)
+  
