@@ -1204,7 +1204,7 @@ prm_ter <- test_all |>
 
 prm_df <- bind_rows(prm_clo, prm_gpp, prm_ter) 
 
-prm_df |>
+plt <- prm_df |>
     mutate(ews = case_when(
         ews == "ews_ac1" ~ "Autocorrelation lag-1",
         ews == "ews_fd" ~ "Fractal dimension",
@@ -1215,20 +1215,24 @@ prm_df |>
     mutate(ews = as_factor(ews), 
            ews = fct_relevel(ews, "Standard deviation"),
            ews = fct_relevel(ews, "Fractal dimension", after = Inf)) |> 
-    ggplot(aes(perm, abs_delta)) +
-    geom_boxplot(aes(color = variable, fill = variable, alpha = real), 
-                 show.legend = FALSE, size = 0.5, outlier.size = 0.5) +
-    facet_wrap(ews ~ variable, scales = "free", ncol = 3) +
-    scale_alpha_discrete(range = c(0.2, 0.8)) +
-    labs(x = "Permutations", y = expression(paste("|", Delta, "|"))) +
-    theme_light()
+    ggplot(aes(abs_delta, real)) +
+    geom_boxplot(aes(color = real, fill = real), alpha = 0.25, 
+                 show.legend = TRUE, size = 0.25, outlier.size = 0.15) +
+    facet_wrap(variable ~ ews, scales = "free_x", nrow = 3) +
+    scale_fill_brewer("Group", palette = "Set1", labels = c("Permutations", "Real")) +
+    scale_color_brewer("Group", palette = "Set1", labels = c("Permutations", "Real")) +
+    labs(y = "", x = expression(paste("|", Delta, "|"))) +
+    theme_light(base_size = 6) +
+    theme(axis.text.y = element_blank(), legend.position = "top")
+plt
+#ggpval::add_pval(plt, pairs = list(c(1,2)), test = 'wilcox.test')
 
 ggsave(
-    plot = last_plot(),
-    filename = "figS_permutations.png",
+    plot = plt,
+    filename = "figS_permutations2.png",
     path = "/Users/juanrocha/Documents/Projects/ESDL_earlyadopter/ESDL/paper/figures/",
     device = "png",
-    width = 7, height = 7, dpi = 400
+    width = 5.5, height = 3, dpi = 500
 )
 
 ## for writing: all text show that the mean between real and permutations is not the same, the difference is not equal to zero, all p-values < 0.05

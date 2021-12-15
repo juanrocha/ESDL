@@ -8,8 +8,6 @@ author: |
 abstract: |
   Ecosystems around the world are at risk of critical transitions due to increasing
   anthropogenic pressures and climate change. Yet it is unclear where the risks are higher or where in the world ecosystems are more vulnerable. Here I measure resilience of primary productivity proxies for marine and terrestrial ecosystems globally. Up to 29% of global terrestrial ecosystem, and 24% marine ones, show symptoms of resilience loss. These symptoms are shown in all biomes, but by large Arctic tundra and boreal forest are the most affected, as well as the Indian Ocean and Eastern Pacific. Although the results are likely an underestimation, they enable the identification of risk areas as well as the potential synchrony of some transitions, helping prioritize areas for management interventions and conservation.
-
-
 output:
   pdf_document:
     dev: pdf
@@ -21,7 +19,7 @@ output:
   word_document:
     reference_docx: Science_manuscript_word_template-2021.docx
     toc: no
-csl: /Users/juanrocha/Documents/styles/science.csl
+csl: /Users/juanrocha/Documents/styles/nature.csl
 bibliography: bibliography.bib
 citecolor: blue
 documentclass: article
@@ -103,9 +101,9 @@ engineering [@Pavithran:2021jc]. Exit time has also being proposed as a
 resilience indicator, it does however requires high resolution time series with
 multiple shifts to render useful insights [@Arani:2021iv]. Autoregressive
 state-space models and dynamic linear models are also proposed as alternatives
-to generic early warnings which could help circumbent some of their limitations
-by calculating changes on the leading eignvalue in time series, if $\lambda >1$
-the timeseries signals a loss of stability and resilience [@Ives:2012df;
+to generic early warnings which could help circumvent some of their limitations
+by calculating changes on the leading eigenvalue in time series, if $\lambda >1$
+the time series signals a loss of stability and resilience [@Ives:2012df;
 @Taranu:2018dg; @Carpenter:2013cr]. On the empirical realm, recent studies
 has pointed to remote sensing products [@Verbesselt:2016hn] and climate
 change simulations [@Bathiany:2020cl] as suitable high dimensional datasets
@@ -132,7 +130,7 @@ is driving resilience loss in ecosystems world-wide.
 ```{=tex}
 \begin{figure*}[ht]
 \centering
-\includegraphics[width = 7.2in, height = 3in]{figS_one_pixel_GPP}
+\includegraphics[width = 7in, height = 3in]{figS_one_pixel_GPP}
 \caption{\textbf{Example with one pixel} Early warning signals for one pixel of the gross primary productivity dataset. A rolling window of half the length of the time series is used to calculate the dynamic indicators of resilience. $\Delta$ is the difference between maximum and minimum values, and the black points signal the break point of a segmented regression used to detect whether there are big jumps (increase or decrease) on the resilience indicators (A). (B) shows the coherence between resilience indicators across different datasets. They are labelled critical slowing down if both variance and autocorrelations increases, or speeding up if they decrease. If they contradict, they are labelled ambiguous. The same pixels can fill more than one early warning type, thus proportions can be > 1.}
 \label{fig:sm-onepxl}
 \end{figure*}
@@ -173,7 +171,16 @@ autocorrelation and variance increase or decrease in tandem, the signatures of
 critical slowing down or speeding up. In contrast, large values of $\Delta$,
 interpreted here as symptoms of resilience loss, are detected in a number of
 different arrangments being them most common agreement between kurtosis and
-skewness (Fig \ref{fig:sm-gpp},\ref{fig:sm-ter}, \ref{fig:sm-mar}).
+skewness.
+
+```{=tex}
+\begin{figure*}[ht]
+\centering
+\includegraphics[width = 7in, height = 4in]{fig_detection_marine}
+\caption{\textbf{Resilience loss in marine realms} Detection of resilience loss using chlorophyll-A as proxy of primary productivity (A). B) shows the global aggregate of resilience loss, C) shows aggregated proportion of area per marine realm, while D) shows are in 0.25 degree pixels. Maps for each resilience indicator are provided in Fig \ref{fig:sm-mar}.}
+\label{fig:mar}
+\end{figure*}
+```
 
 Ecosystems world-wide are showing symptoms of resilience loss. The absolute
 difference in resilience indicators ($\Delta$) emphasizes jumps in the time
@@ -194,13 +201,14 @@ Caribbean basin in the Tropical Atlantic, the Tropical Pacific and south east
 Madagascar.
 
 ```{=tex}
-\begin{figure*}[ht]
+\begin{figure*}[htp]
 \centering
-\includegraphics[width = 7in, height = 4in]{fig_detection_marine}
-\caption{\textbf{Resilience loss in marine realms} Detection of resilience loss using chlorophyll-A as proxy of primary productivity (A). B) shows the global aggregate of resilience loss, C) shows aggregated proportion of area per marine realm, while D) shows are in 0.25 degree pixels. Maps for each resilience indicator are provided in Fig \ref{fig:sm-mar}.}
-\label{fig:mar}
+\includegraphics[width = 5.5in, height = 3in]{figS_permutations2}
+\caption{\textbf{Permutations tests over time} A sample of 500 pixels where resilience loss was detected by at least three indicators is compared against 5000 permutations of the same time series (10 permutations each). A Wilcoxon two sided test confirms differences in mean between the real and permuted time series (p << 0.05 for all comparisons).}
+\label{fig:perms}
 \end{figure*}
 ```
+
 Symptoms of resilience loss are coherent in space and time. Although the
 analysis was done independently for each time series and variable, spatial
 aggregation and coincidence of break points in time suggest that the signals are
@@ -218,13 +226,13 @@ possible shifting of basin of attraction or dynamic transients
 ```{=tex}
 \begin{figure*}[ht]
 \centering
-\includegraphics[width = 7in, height = 7in]{figS_permutations}
-\caption{\textbf{Permutations tests over time} A sample of 500 pixels where resilience loss was detected by at least three indicators is compared against 5000 permutations of the same time series (10 permutations each). A Wilconxon two sided test confirms differences in mean between the real and permuted time series (p << 0.05 for all comparisons).}
-\label{fig:perms}
+\includegraphics[width = 7in, height = 2.5in]{lambda_plots}
+\caption{\textbf{Model-based indicators} A sample of 100 pixels where resilience loss was detected by at least three indicators is compared against 100 pixels where no signals were detected. The leading eigenvalue of the system is approximated with a dynamic linear autoregressive model}
+\label{fig:lambda}
 \end{figure*}
 ```
 An alternative interpretation for coherence of signals is spatial and temporal
-autocorrelations, or that they are merely responses to shocks on environmental
+autocorrelation, or that they are merely responses to shocks on environmental
 variables. Potential issues of temporal autocorrelation were dealt with by
 processing the data to the point that the remaining time series were stationary
 [@ives2021statistical]. Issues of spatial autocorrelation are dealt (below) by
@@ -259,13 +267,14 @@ terrestrial ecosystem respiration however, model-based early warnings do not
 support the patterns found by the generic indicators.
 
 ```{=tex}
-\begin{figure*}[ht]
+\begin{figure*}[htp]
 \centering
-\includegraphics[width = 7.3in, height = 3in]{lambda_plots}
-\caption{\textbf{Model-based indicators} A sample of 100 pixels where resilience loss was detected by at least three indicators is compared against 100 pixels where no signals were detected. The leading eignevalue of the system is approximated with a dynamic linear autoregressive model}
-\label{fig:lambda}
+\includegraphics[width = 7in, height = 7in]{fig_regressions_combined}
+\caption{\textbf{Predictors of resilience loss} Logistic regressions to predict signals of resilience loss in gross primary productivity, terrestrial ecosystem respiration (A), and chlorophyll A (C). The strongest predictors of the random forest for terrestrial systems (B) and marine realms (D) were calculated with a permutation method. All random forest fitted 1000 trees. The best model for gross primary productivity targeted node size 10 and 12 variables to split at each node (N = 31122, OOB error 0.13), 20 node size and 9 variables for terrestrial ecosystem respiration (N = 29546, OOB error 0.14), and 20 node size and 9 variables for chlorophyll A (N = 54298, OOB error 0.16). }
+\label{fig:reg}
 \end{figure*}
 ```
+
 If resilience is approximated as the size of the basin of attraction, critical
 slowing down picks up reductions in depth while critical speeding up is sensible
 to reductions in width. However, these theories when applied to ecological
@@ -320,14 +329,7 @@ necessarily in which direction they are affecting resilience loss. The results
 of both approaches confirm the hypothesis that resilience loss is driven by a
 combination of slow forcing and stochasticity on potential drivers.
 
-```{=tex}
-\begin{figure*}[ht]
-\centering
-\includegraphics[width = 7in, height = 7in]{fig_regressions_combined}
-\caption{\textbf{Predictors of resilience loss} Logistic regressions to predict signals of resilience loss in gross primary productivity, terrestrial ecosystem respiration (A), and chlorophyll A (C). The strongest predictors of the random forest for terrestrial systems (B) and marine realms (D) were calculated with a permutation method. All random forest fitted 1000 trees. The best model for gross primary productivity targeted node size 10 and 12 variables to split at each node (N = 31122, OOB error 0.13), 20 node size and 9 variables for terrestrial ecosystem respiration (N = 29546, OOB error 0.14), and 20 node size and 9 variables for chlorophyll A (N = 54298, OOB error 0.16). }
-\label{fig:reg}
-\end{figure*}
-```
+
 # Discussion
 
 Resilience is the ability of any system to deal with change while keeping its
@@ -446,18 +448,18 @@ computationally expensive methods become practical.
 Computing the probability density function of $\Delta$ helps interpreting
 signals of resilience loss. Previous work using generic indicators typically
 have ground truth in the form of modeling simulations with some noise or actual
-experiements. Because the ground truth is known, there was not concern whether
-the magnitud of increase (decrease) in early warnings was big enough to actually
+experiments. Because the ground truth is known, there was not concern whether
+the magnitude of increase (decrease) in early warnings was big enough to actually
 be considered a warning. Here we do not have ground truth as in experiments, but
 we can compute the distribution of each indicator for the entire planet enabling
-the comparison of what consitutes a big jump on an indicator as opposed to its
-normal expected variability for each biome. The magnitud depends on the
+the comparison of what constitutes a big jump on an indicator as opposed to its
+normal expected variability for each biome. The magnitude depends on the
 indicator and data pre-processing choices, but the position of the pixel in the
-distribution is relatively unnafected. Thus $\Delta$ is less sensitive to
+distribution is relatively unaffected. Thus $\Delta$ is less sensitive to
 pre-processing choices. While in theory increases or decreases on a particular
 statistic can be interpreted as resilience loss (an apparent contradiction), the
 distribution of $\Delta$ helps interpreting whether an increase or decrease is
-towards the tails of the distribution (resilience loss) as opposed to a an
+towards the tails of the distribution (resilience loss) as opposed to an
 increase or decrease towards the center of the distribution (a resilience gain).
 The fractal dimension here introduced is unambiguous and do not depend on scale,
 for time series it is bounded between 1 and 2 and higher values are always more
@@ -648,7 +650,7 @@ initiative, and the Global fire emissions database. JCR would like to thank the
 European Space Agency and the Max Planck Institute of Biogeochemistry for an
 early adopter grant to use the Earth System Data Lab curated data sets and
 computational facilities. The manuscript has benefited from comments from Fabian
-Dablander, Steven Lade, and Stephen Carpenter. JCR was supported by Formas
+Dablander, Steven Lade, Thorsten Blenckner, and Stephen Carpenter. JCR was supported by Formas
 grants 942-2015-731, 2020-00198 and 2019-02316, the latter through the Belmont
 Forum.
 
