@@ -19,11 +19,11 @@ output:
   word_document:
     reference_docx: Science_manuscript_word_template-2021.docx
     toc: no
-csl: /Users/juanrocha/Documents/styles/nature.csl
+csl: /Users/juanrocha/Documents/styles/vancouver.csl
 bibliography: bibliography.bib
 citecolor: blue
 documentclass: article
-font: Arial
+#font: Arial
 fontsize: 10pt
 keywords:
 - cooperation
@@ -35,8 +35,8 @@ linkcolor: blue
 urlcolor: blue
 header-includes:
 - \usepackage{dcolumn, rotating, longtable, lineno, float, array, tabularx, inputenc}
-- \setmainfont{Arial}
-- \linenumbers
+#- \setmainfont{Arial}
+# - \linenumbers
 - \renewcommand{\abstractname}{}
 - \graphicspath{{figures/}}
 - \usepackage[margin=2.5cm]{geometry}
