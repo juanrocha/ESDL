@@ -39,7 +39,7 @@ df_ews <- df %>%
 
 
 df_ews %>%
-  # ggplot(aes(lon, lat)) + geom_tile(aes(fill = n_ews))
+  #ggplot(aes(lon, lat)) + geom_tile(aes(fill = n_ews))
   ggplot(aes(biome)) + geom_bar() + coord_flip()
 
 ## calculate the bar plots also as proportion of the biome showing EWS.
@@ -57,7 +57,7 @@ df_ews %>%
 #   theme_light()
 
 # ## save results:
-save(df_ews, file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201024_detected_terrestrial_ecosystem_respiration_log.RData")
+save(df_ews, file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/220325_detected_gpp_log_4yr-window.RData")
 
 ##
 # load("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/200901_detected_terrestrial_ecosystem_respiration.RData")

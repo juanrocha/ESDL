@@ -9,21 +9,21 @@ abstract: |
   Ecosystems around the world are at risk of critical transitions due to increasing
   anthropogenic pressures and climate change. Yet it is unclear where the risks are higher or where in the world ecosystems are more vulnerable. Here I measure resilience of primary productivity proxies for marine and terrestrial ecosystems globally. Up to 29% of global terrestrial ecosystem, and 24% marine ones, show symptoms of resilience loss. These symptoms are shown in all biomes, but Arctic tundra and boreal forest are the most affected, as well as the Indian Ocean and Eastern Pacific. Although the results are likely an underestimation, they enable the identification of risk areas as well as the potential synchrony of some transitions, helping prioritize areas for management interventions and conservation.
 output:
+  rtf_document:
+    toc: no
   pdf_document:
     dev: pdf
     keep_tex: yes
     toc: no
     latex_engine: xelatex
-  rtf_document:
-    toc: no
   word_document:
     reference_docx: Science_manuscript_word_template-2021.docx
     toc: no
 csl: /Users/juanrocha/Documents/styles/vancouver.csl
-bibliography: bibliography.bib
+bibliography: [bibliography.bib, packages.bib]
 citecolor: blue
 documentclass: article
-#font: Arial
+font: Arial
 fontsize: 10pt
 keywords:
 - cooperation
@@ -35,8 +35,7 @@ linkcolor: blue
 urlcolor: blue
 header-includes:
 - \usepackage{dcolumn, rotating, longtable, lineno, float, array, tabularx, inputenc}
-#- \setmainfont{Arial}
-# - \linenumbers
+- \setmainfont{Arial}
 - \renewcommand{\abstractname}{}
 - \graphicspath{{figures/}}
 - \usepackage[margin=2.5cm]{geometry}
@@ -47,7 +46,9 @@ library(tidyverse)
 library(here)
 
 ## load datasets if it helps for writing
-
+pkgs <- c("tidyverse", "tsibble", "tictoc", "future", "furrr", "slider", "progress", "fractaldim",
+          "forecast", "urca", "raster", "here", "segmented", "rsample",  "sf", "fasterize",
+          "corrgram", "tidymodels", "janitor", "broom", "GGally", "diptest", "MARSS")
 ```
 
 Ecosystems are prone to non-linear dynamics that can shift their function and
@@ -58,9 +59,9 @@ from forest to savannas [@Hirota:2011p7120], the collapse of coral reefs
 transitions [@Turetsky:2015fn], or the emergence of hypoxic dead zones in
 coastal systems [@Breitburg:2018iz; @Diaz:2008p199]. Over 30 different types
 of regime shifts at the ecosystem scale have been reported in the literature
-[@Biggs:2018hx]. Yet predicting when and where they will occur remains
+[@Biggs:2018hx]. Because regime shifts can be hard to reverse [@Hastings:2010p5336]  and can impact the services that society gets from ecosystems [@Carpenter:2009jr], predicting regime shifts is a policy relevant endeavour. Even imperfect predictions can help society to prepare for navigating some of these transitions, or avoid them when possible. Yet predicting when and where they will occur remains
 challenging for most ecosystems [@Dakos:2015jt]. Understanding this is
-deeply related to our ability to observe and measure resilience.
+deeply related to our ability to observe and measure resilience. 
 
 Resilience is the ability of a system to withstand disturbances without losing
 its function, structure, and hence its identity [@Holling:1973p6861;
@@ -81,7 +82,7 @@ Fourier transforms, spatial variance, skewness, power spectrums, and patch-size
 distributions [@Kefi:2014dl]. These methods however have some limitations.
 They require long time series to detect useful signals [@Dakos:2015jt], and
 they can fail when regime shifts are driven by stochastic processes
-[@Hastings:2018gy; @Hastings:2010p5336].
+[@Hastings:2018gy; @Hastings:2010p5336]. 
 
 Recent theoretical and empirical developments have addressed some of these
 limitations. On the theoretical front, *critical speeding up* has been proposed
@@ -89,8 +90,8 @@ as a suitable alternative to detect stochastically driven critical transitions
 [@Titus:2020hb]. While critical slowing down relies on the assumption that
 resilience loss is driven by a widening and depth loss of the current basin of
 attraction, critical speeding up assumes that the basin shrinks by narrowing the
-basin [@Titus:2020hb]. Both techniques pick up resilience loss by measuring
-changes in the higher moments of the time series distribution by detecting
+basin [@Titus:2020hb] (Fig  \ref{fig:ews}). Both techniques pick up resilience loss by measuring
+changes in the higher moments of the time series distribution, detecting
 sudden increase (decrease) of variance, autocorrelation, skewness or kurtosis.
 Another proposed proxy of resilience is the fractal dimension [@West:2017wo;
 @West:2010db], which is an indication of self-similarity across scales. The
@@ -109,9 +110,19 @@ have pointed to remote sensing products [@Verbesselt:2016hn] and climate
 change simulations [@Bathiany:2020cl] as suitable high dimensional datasets
 for testing some of these tools in quantifying resilience.
 
+```{=tex}
+\begin{figure*}[ht]
+\centering
+\includegraphics[width = 6in, height = 2in]{ews_scheme}
+\caption{\textbf{Resilience loss} Resilience can be approximated as the size of the basin of attraction. (A) shows three basins derived from the same system under different parameter values where the black basin is more resilience than the other two. The blue basin loses resilience by reducing the basin depth (a good candiate for critical slowing down), while the orange basin loses resilience by reducing basin width (a good candidate for critical speeding up). (B) shows the time evolution of these three systems and (C) the autocorrelation at lag 1, showing that reductions of resilience manifest by increases or decreases in autocorrelation respectively. The equation of the potential follows the form $V_{\beta, \gamma} (x) = \beta \gamma (x - \sqrt{\gamma/ 3\beta^2}) - \beta^3(x - \sqrt{\gamma / 3\beta^2})^3$, from ref 23.  }
+\label{fig:ews}
+\end{figure*}
+```
+
+
 This paper aims to identify where regime shifts are likely to occur by detecting
 signals of resilience loss in terrestrial and marine ecosystems primary
-productivity. It applies the traditional early warning signals based on critical
+productivity. Primary productivity is a proxy of how much living organisms are able to transform solar energy and nutrients into biomass through photosynthesis. Seeing from space, primary productivity is the pulse of life in the biosphere and is typically measured as carbon stored in plants and phytoplankton. This paper applies the traditional early warning signals based on critical
 slowing down; and adapts the methods to include critical speeding up metrics,
 and fractal dimension (See Methods). To that end, [gross primary
 productivity](http://www.fluxcom.org), terrestrial ecosystem respiration, and
@@ -131,10 +142,21 @@ is driving resilience loss in ecosystems world-wide.
 \begin{figure*}[ht]
 \centering
 \includegraphics[width = 7in, height = 3in]{figS_one_pixel_GPP}
-\caption{\textbf{Example with one pixel} Early warning signals for one pixel of the gross primary productivity dataset. A rolling window of half the length of the time series is used to calculate the dynamic indicators of resilience. $\Delta$ is the difference between maximum and minimum values, and the black points signal the break point of a segmented regression used to detect whether there are big jumps (increase or decrease) on the resilience indicators (A). (B) shows the coherence between resilience indicators across different datasets. They are labelled critical slowing down if both variance and autocorrelations increases, or speeding up if they decrease. If they contradict, they are labelled ambiguous. The same pixels can fill more than one early warning type, thus proportions can be > 1.}
+\caption{\textbf{Example with one pixel} Early warning signals for one pixel of the gross primary productivity dataset. All datasets used are projected with a WGS84 projection (or EPSG:4326) which means that a 0.25 degree resolution pixel is ~27km long at the equator. A rolling window of half the length of the time series is used to calculate the dynamic indicators of resilience. $\Delta$ is the difference between maximum and minimum values, and the black points signal the break point of a segmented regression used to detect whether there are big jumps (increase or decrease) on the resilience indicators (A). (B) shows the coherence between resilience indicators across different datasets. They are labelled critical slowing down if both variance and autocorrelations increases, or speeding up if they decrease. If they contradict, they are labelled ambiguous. The same pixels can fill more than one early warning type, thus proportions can be > 1.}
 \label{fig:sm-onepxl}
 \end{figure*}
 ```
+
+```{=tex}
+\begin{figure*}[ht]
+\centering
+\includegraphics[width = 6in, height = 2in]{deltas_AR1}
+\caption{\textbf{Distributions of $\Delta$ for autocorrelation} $\Delta$ distribution is bimodal for all the statistics analysed, here depicted for autocorrelation as example. (A) $\Delta$ reveals resilience loss if a particular pixel has a value >95 or <5 quantiles; however one can also measure resilience gains if in the future pixels on the tail of the distribution move towards the normal ranges of variability. These ranges depend on biome (B) or marine realm (C). Pixels marked as missing values (NA) for terrestrial systems are coastal pixels that fell outside the polygon classification for terrestial biomes; while missing values for marine realms are the high seas.}
+\label{fig:delta}
+\end{figure*}
+```
+
+
 # Results
 
 ```{=tex}
@@ -151,7 +173,7 @@ for one pixel where all indicators show signals of resilience loss. The time
 series is first pre-processed to remove confounding factors such as seasonality
 or long term oscillations, log-transformed to reduce the influence of outliers
 or shock events, and centered to zero mean and unit variance (Methods). All time
-series were first-differenced and passed a root test that guarantees
+series were first-differenced and passed a unit root test that guarantees
 stationarity; in other words, if a signal is detected it is not the product of
 residual long-term trends or seasonal variation on the data. The generic
 indicators are then calculated by using a rolling window with length equivalent
@@ -159,7 +181,7 @@ to 50% of the data. To detect changes in trends of the indicators we used three
 approaches. First, $\Delta$ captures the difference between the minimum and
 maximum values of the indicator over time. By itself $\Delta$ is not very
 informative unless one has its distribution for the entire planet to compare
-against. In the pixel described in Fig \ref{fig:sm-onepxl} the observed $\Delta$
+against (Fig \ref{fig:delta}). In the pixel described in Fig \ref{fig:sm-onepxl} the observed $\Delta$
 is indeed on the tail of the distribution for all indicators. Second, a linear
 regression was fitted to each indicator to test whether the slopes were
 different from zero, but it tends to treat sharp increases or decreases of the
@@ -170,7 +192,7 @@ analysis for all pixels across all datasets shows that only in few cases
 autocorrelation and variance increase or decrease in tandem, the signatures of
 critical slowing down or speeding up. In contrast, large values of $\Delta$,
 interpreted here as symptoms of resilience loss, are detected in several
-different arrangments, most commonly in the agreement between kurtosis and
+different arrangements, most commonly in the agreement between kurtosis and
 skewness.
 
 ```{=tex}
@@ -244,19 +266,19 @@ of observations changed (10 permutations per time series, 5000 permutations).
 When the ordering of observations is lost, the signal of resilience loss
 disappears, meaning it has e.g. a significantly lower autocorrelation and
 standard deviation on the absolute value scale (Fig \ref{fig:perms}). A Wilcoxon
-two-sided test, comparing the distributions of permutations agains observed data,
+two-sided test, comparing the distributions of permutations against observed data,
 suggests that the means are indeed different (p \<\< 0.05 for all comparisons).
 Thus, the results are not merely noise induced by outliers (e.g. shocks) because
 the same time series with the same outliers but different ordering does not show
 the early warnings to the same extent as the observed data. On the contrary,
-for some statistics like autocorrelation and standard deviation, their delta
-values go back to what is expected to be normal (the global median).
+for some statistics like autocorrelation and standard deviation, their $\Delta$
+values go back to what is expected to be normal (the global medium range, see i.e., Figs \ref{fig:delta}, or the insets in \ref{fig:sm-gpp}, \ref{fig:sm-ter}, \ref{fig:sm-mar} for all variables).
 
 An additional robustness test is comparing the generic indicators against
-model-based early warnings. The latter are autoregressive dynamic linear models
+model-based early warnings. The former are statistical trends that do not necessarily account for mechanisms and can be vulnerable to false positives and false negatives. The latter are auto regressive dynamic linear models
 that enable fitting coefficients that change over time, in particular the
 approximation of the leading eigenvalue of the system $\lambda$ [@Ives:2012df;
-@Taranu:2018dg; @Carpenter:2013cr]. For each dataset a sample of a hundred
+@Taranu:2018dg; @Carpenter:2013cr]. The leading eigenvalue is a much stronger indicator that the system is stable or not, if $\lambda > 1$ it is a signature that the system is going away from equilibrium, possibly an alternative state or a dynamic transient. For each data set a sample of a hundred
 pixels was randomly drawn for detected places with at least three different
 resilience indicators, and compared against places that showed no early warning
 (Fig \ref{fig:lambda}). Model-based indicators showed resilience loss for at
@@ -277,7 +299,7 @@ support the patterns found by the generic indicators.
 
 If resilience is approximated as the size of the basin of attraction, critical
 slowing down is sensible to reductions in depth while critical speeding up is sensible
-to reductions in width. However, these theories when applied to ecological
+to reductions in width (Fig \ref{fig:ews}). However, these theories when applied to ecological
 problems are typically approached as low dimensional models with perhaps one
 controlling factor, one driver. Recent experimental evidence suggests that when
 ecosystems are subject to multiple drivers, early warning indicators can fail or
@@ -367,7 +389,7 @@ thresholds by the end of the century, with the most affected areas being
 Canadian and Russian boreal taigas as well as the Amazon and South East Asia
 rainforests [@Duffy:2021br]. These are biomes where the strongest signals of
 resilience loss were detected with a right shift on the distribution of
-$\Delta$. Other studies quantifying terrestrial ecosystems' resilience with NDVI
+$|\Delta|$. Other studies quantifying terrestrial ecosystems' resilience with NDVI
 data also show strong signals from tundra and boreal forests [@Feng:2021gr].
 A recent quantification of aridity thresholds shows that up to 28.6% of current
 dryland area can cross these thresholds by 2100 in the most drastic climate
@@ -453,7 +475,7 @@ the magnitude of the increase (decrease) in early warnings was big enough to act
 be considered a warning. Here we do not have ground truth like experiments, but
 we can compute the distribution of each indicator for the entire planet enabling
 the comparison of what constitutes a big jump on an indicator as opposed to its
-normal expected variability for each biome. The magnitude depends on the
+normal expected variability for each biome (Fig \ref{fig:delta}). The magnitude depends on the
 indicator and data pre-processing choices, but the position of the pixel in the
 distribution is relatively unaffected. Thus, $\Delta$ is less sensitive to
 pre-processing choices. While in theory increases or decreases on a particular
@@ -480,7 +502,7 @@ land use planning and take the vulnerability of their
 ecosystems into consideration. Companies for example, can take such risk into account when deciding
 on relocation, resource outsourcing, or investments. Countries and
 municipalities can balance the trade-off between maximizing a particular
-ecosystem service (e.g. a monoculture) in favour of multifunctional landscapes
+ecosystem service (e.g. food production) in favour of multifunctional landscapes
 that include other values such as recreation, spiritual values or conservation.
 No matter the scale, we all have a role to play in caring for ecosystems
 resilience and maintaining their ability to provide the ecosystem services we
@@ -495,12 +517,12 @@ all depend on.
 \end{figure*}
 ```
 Future global resilience assessments could benefit from other data streams,
-particularly other anthropogenic drivers overlooked here. Additional data would
+particularly other anthropogenic drivers overlooked here. Answering the question of resilience of what to what will require observations in several ecological and social data streams. For example, longer recovery time might be related to more frequent and intense perturbations (rate induced tipping), not necessarily reductions on the basin of attraction size [@ashwin2012tipping]. Recent qualitative reviews on regime shifts drivers diversity show that no regime shift is caused by single drivers. Multiple drivers often interact in non-random patterns where food production, nutrient cycling, climate change and urbanization co-occur strongly [@Rocha:2018gn; @Rocha:2015du]. Additional data would
 however require long time series coverage and high spatial resolution. The
 accuracy of the predictive models presented here can be improved by using
 non-linear approaches such as deep neural networks or other machine learning
 techniques [@Reichstein:2019ii]. However, these approaches have limited
-interpretability and often require manually annotated datasets to measure
+interpretability and often require manually annotated data sets to measure
 performance. Qualitative efforts such as the Global Ocean Oxygen Network
 [@Breitburg:2018iz] or the Regime Shifts Database [@Biggs:2018hx] can
 provide the annotated examples to train such models. A spatially explicit map of
@@ -639,7 +661,10 @@ initiative, or the Global fire emissions database. Links to each data set are
 provided when introduced under the section data or regressions.
 
 *Computer code:* All code used in this analysis is available at
-<https://github.com/juanrocha/ESDL>.
+<https://github.com/juanrocha/ESDL>. The computations in the paper would have not been possible without open source software including the following packages: `broom` [@R-broom], `corrgram` [@R-corrgram], `deSolve` [@R-deSolve], 
+`diptest` [@R-diptest], `facterize` [@R-fasterize], `forecast` [@R-forecast], `fractaldim` [@R-fractaldim], `furrr` [@R-furrr], `future` [@R-future], `GGally` [@R-GGally], `ggridges` [@R-ggridges], `ggplot2` [@R-ggplot2], `here` [@R-here],
+`janitor` [@R-janitor], `MARSS` [@R-MARSS], `progress` [@R-progress], `patchwork`[ @R-patchwork], `purrr` [@R-purrr], `raster` [@R-raster], `rsample` [@R-rsample], `segmented` [@R-segmented],
+`sf` [@R-sf], `slider` [@R-slider], `tictoc` [@R-tictoc], `tidymodels` [@R-tidymodels], `tidyverse` [@R-tidyverse], `tsibble` [@R-tsibble], and `urca` [@R-urca] in the R programming language [@R-base], and `ESDL`, `FFTW`, `NetCDF`, and `Statistics` in Julia [@bezanson2017julia].
 
 # Acknowledgements
 
@@ -649,7 +674,7 @@ initiative, and the Global fire emissions database. JCR would like to thank the
 European Space Agency and the Max Planck Institute of Biogeochemistry for an
 early adopter grant to use the Earth System Data Lab curated data sets and
 computational facilities. The manuscript has benefited from comments from Fabian
-Dablander, Steven Lade, Thorsten Blenckner, Megan Meacham and Stephen Carpenter. JCR was supported by Formas
+Dablander, Steven Lade, Thorsten Blenckner, Megan Meacham, Giesela Rohr and Stephen Carpenter. JCR was supported by Formas
 grants 942-2015-731, 2020-00198 and 2019-02316, the latter through the Belmont
 Forum.
 

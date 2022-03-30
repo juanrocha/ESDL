@@ -1,7 +1,7 @@
 library(tidyverse)
 library(tictoc)
 library(here)
-
+library(fs)
 # J210209: I'm modifying the original script to identify from the begining the
 # differences between critical slowing down and speeding up. To do so, I need to
 # recover the order of max and min in the time series, making the difference
@@ -10,15 +10,15 @@ library(here)
 # of the distribution. Updating also relative paths for reproducibility
 
 wd <- here()
-key_var <- "ews_halfwindow_lai_log"
+key_var <- "ews_4yr-window_GPP_log"
 
 ## load the keys to the file
-load('keys_lai_log.RData')
+load('keys_gpp_log.RData')
 
-files <- list.files(path = paste0("Results/", key_var))
+files <- fs::dir_ls(path = paste0("Results/", key_var))
 
-## for the function to work I still need to declare working directory
-setwd(dir = paste0(wd,"/Results/", key_var))
+## for the function to work I still need to declare working directory. J220325: Not anymore if using fs::dir_ls because it creates the relative path to the current wd, else the absolute path on the machine.
+#setwd(dir = paste0(wd,"/Results/", key_var))
 
 ## the function recover min and max for each early warning statistics and calculates
 ## the difference. But preserve time ordering, so negative values indicate decrease,
@@ -85,7 +85,8 @@ toc() # 29mins sequential | 87mins ChlorA
 
 # recover latitudes from file names
 tic()
-lat <- files %>% str_remove("lat_") %>% str_remove(".csv") %>% as.numeric()
+lat <- files %>% str_remove("Results/ews_4yr-window_GPP_log/lat_") %>% 
+    str_remove(".csv") %>% as.numeric()
 toc()
 
 ## Add corrected latitudes
@@ -114,7 +115,7 @@ toc()
 
 setwd(wd)
 
-save(deltas, file = "Results/210318_deltas_lai_log2_longdf.RData")
+save(deltas, file = "Results/220325_deltas_gpp_log_4yr-window.RData")
 
 #### some viz ####
 

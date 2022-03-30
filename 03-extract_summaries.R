@@ -4,17 +4,18 @@ library(here)
 
 
 wd <- here()
-key_var <- "ews_halfwindow_terrestrial_ecosystem_respiration_log"
+#key_var <- "ews_halfwindow_terrestrial_ecosystem_respiration_log"
+key_var <- "ews_4yr-window_GPP_log"
 
 # setwd("~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/ews_halfwindow_terrestrial_ecosystem_respiration_log")
 
 ## load the keys to the file
-load('keys_terrestrial_ecosystem_respiration_log.RData')
+load('keys_gpp_log.RData')
 
-files <- list.files(path = paste0("Results/", key_var))
+files <- fs::dir_ls(path = paste0("Results/", key_var))
 
 ## for the function to work I still need to declare working directory
-setwd(dir = paste0(wd,"/Results/", key_var))
+#setwd(dir = paste0(wd,"/Results/", key_var))
 
 
 summary_all <- function(x){
@@ -84,7 +85,8 @@ diffs <- files %>%
 toc() # 20mins in sequential, 33 min LAI, 13min gpp-log, 42min chlorA-log, 25min lai-log
 
 # latitudes are wrong, recover them from file names
-lat <- files %>% str_remove("lat_") %>% str_remove(".csv") %>% as.numeric()
+lat <- files %>% str_remove("Results/ews_4yr-window_GPP_log/lat_") %>% 
+    str_remove(".csv") %>% as.numeric()
 ## Add corrected latitudes
 tic()
 diffs <- diffs %>%
@@ -115,6 +117,6 @@ lobstr::obj_size(df)
 object.size(df) %>% format("Mb")
 
 ## Save results:
-save(df, file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/201029_summary_terrestrial_ecosystem_respiration_log.RData")
+save(df, file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/Results/220325_summary_GPP_log_4yr-window.RData")
 
 ## can you pre-select the relevant links where larger differences are present?

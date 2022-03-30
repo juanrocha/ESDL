@@ -110,7 +110,7 @@ early_warning <- function(x, window){
 } # 19 secs in sequential
 
 # Window decides the window size: 52, 52*4, length(time)/2
-window <- floor(length(time)/2)
+window <- 52*4#floor(length(time)/2)
 
 ## test
 tic()
@@ -173,7 +173,7 @@ toc() # 3.5 secs
 ## Note that the latitudes that do not have data were dropped, so only 543 slices of data are preserved, all with lon and lat coords.
 length(results) # 543
 
-# save(results, file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/201029_results_ews_halfwindow_terrestrial_ecosystem_respiration-log.RData")
+# save(results, file = "~/Documents/Projects/ESDL_earlyadopter/ESDL/220325_results_ews_4yrwindow_GPP-log.RData")
 
 
 
