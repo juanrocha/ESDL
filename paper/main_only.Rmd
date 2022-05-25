@@ -163,7 +163,7 @@ is driving resilience loss in ecosystems world-wide.
 \begin{figure*}[ht]
 \centering
 \includegraphics[width = 7in, height = 4in]{fig_detection_GPP}
-\caption{\textbf{Resilience loss in terrestrial biomes} Resilience loss for gross primary productivity is approximated as large differences in standard deviation, autocorrelation at lag-1, skewness, kurtosis or fractal dimension. Differences are considered a symptom of resilience loss if they are above the 95\% or below 5\% percentiles of the distribution. A) shows where are biomes showing symptoms of resilience loss, B) shows the global aggregate, C) shows aggregated proportion of area per biome, while D) shows area in 0.25 degree pixels accounting for the number of signals per pixel. A similar figure for terrestrial ecosystem respiration is available in Fig \ref{fig:ter}. Fig \ref{fig:sm-gpp} provides maps for each resilience indicator on the gross primary productivity data, and Fig \ref{fig:sm-ter} on terrestrial ecosystem respiration.}
+\caption{\textbf{Resilience loss in terrestrial biomes} Resilience loss for gross primary productivity is approximated as large differences in standard deviation, autocorrelation at lag-1, skewness, kurtosis or fractal dimension. Differences are considered a symptom of resilience loss if they are above the 95\% or below 5\% percentiles of the distribution. A) shows where are biomes showing symptoms of resilience loss, B) shows the global aggregate, C) shows aggregated proportion of area per biome, while D) shows area in 0.25 degree pixels accounting for the number of signals per pixel. A similar figure for terrestrial ecosystem respiration is available in Fig S1. Fig S2 provides maps for each resilience indicator on the gross primary productivity data, and Fig S3 on terrestrial ecosystem respiration.}
 \label{fig:gpp}
 \end{figure*}
 ```
@@ -199,7 +199,7 @@ skewness.
 \begin{figure*}[ht]
 \centering
 \includegraphics[width = 7in, height = 4in]{fig_detection_marine}
-\caption{\textbf{Resilience loss in marine realms} Detection of resilience loss using chlorophyll-A as proxy of primary productivity (A). B) shows the global aggregate of resilience loss, C) shows aggregated proportion of area per marine realm, while D) shows area in 0.25 degree pixels accounting for the number of signals per pixel. Maps for each resilience indicator are provided in Fig \ref{fig:sm-mar}.}
+\caption{\textbf{Resilience loss in marine realms} Detection of resilience loss using chlorophyll-A as proxy of primary productivity (A). B) shows the global aggregate of resilience loss, C) shows aggregated proportion of area per marine realm, while D) shows area in 0.25 degree pixels accounting for the number of signals per pixel. Maps for each resilience indicator are provided in Fig S4.}
 \label{fig:mar}
 \end{figure*}
 ```
@@ -208,14 +208,14 @@ Ecosystems world-wide are showing symptoms of resilience loss. The absolute
 difference in resilience indicators ($\Delta$) emphasizes jumps in the time
 series and enables comparison with normal variation adjusted to each biome type.
 Arctic ecosystems such as boreal forests, taiga and tundra show the strongest
-signals of resilience loss globally (Fig \ref{fig:gpp}, \ref{fig:ter}). However,
+signals of resilience loss globally (Fig \ref{fig:gpp}, S1). However,
 the extremes of the distributions (5% and 95% percentiles) of each resilience
 proxy reveal that all ecosystems are losing resilience, for some of them up to
 30% of their global area using the gross primary productivity or terrestrial
-ecosystem respiration data sets (Fig \ref{fig:sm-gpp}, \ref{fig:sm-ter}).
+ecosystem respiration data sets (Fig S2, S3).
 Despite data incompleteness for marine ecosystems at high latitudes, some
 signals of resilience loss are detected in Arctic marine systems and the
-Southern Ocean (Fig \ref{fig:mar}, \ref{fig:sm-mar}). The Easter Indo-Pacific
+Southern Ocean (Fig \ref{fig:mar}, S4). The Easter Indo-Pacific
 and Tropical Eastern Pacific Oceans are the marine realms with larger areas
 showing symptoms of resilience loss (Fig \ref{fig:mar}). The high oceans (gray area in Fig \ref{fig:mar}),
 however, show by far the larger areas affected with hot spots outside the
@@ -234,14 +234,14 @@ Madagascar.
 Symptoms of resilience loss are coherent in space and time. Although the
 analysis was done independently for each time series and variable, spatial
 aggregation and coincidence of break points in time suggest that the signals are
-not artifacts of the data used (Fig \ref{fig:sm-map}, \ref{fig:sm-temp-clus} ,
-\ref{fig:sm-temp-cor}). On the contrary, it supports the idea that there are
+not artifacts of the data used (Fig S5, S6, S7). On the contrary, 
+it supports the idea that there are
 edges in the three-dimensional space (longitude, latitude and time) that enclose
 volumes whose dynamics can shift in tandem [@Bathiany:2020cl]. Resilience
 indicators are remarkably consistent across metrics for marine systems both in
-space (Fig \ref{fig:sm-mar}) and time (Fig \ref{fig:sm-temp-cor}). There is high
+space (Fig S4) and time (Fig S7). There is high
 agreement between kurtosis and skewness across all data sets (Figs
-\ref{fig:sm-gpp}, \ref{fig:sm-ter}, \ref{fig:sm-mar}); they can signal the
+S2, S3, S4); they can signal the
 possible shifting of basin of attraction or dynamic transients
 [@Scheffer:2009p4449; @Dakos:2015jt].
 
@@ -272,7 +272,7 @@ Thus, the results are not merely noise induced by outliers (e.g. shocks) because
 the same time series with the same outliers but different ordering does not show
 the early warnings to the same extent as the observed data. On the contrary,
 for some statistics like autocorrelation and standard deviation, their $\Delta$
-values go back to what is expected to be normal (the global medium range, see i.e., Figs \ref{fig:delta}, or the insets in \ref{fig:sm-gpp}, \ref{fig:sm-ter}, \ref{fig:sm-mar} for all variables).
+values go back to what is expected to be normal (the global medium range, see i.e., Figs \ref{fig:delta}, or the insets in S2, S3, S4 for all variables).
 
 An additional robustness test is comparing the generic indicators against
 model-based early warnings. The former are statistical trends that do not necessarily account for mechanisms and can be vulnerable to false positives and false negatives. The latter are auto regressive dynamic linear models
@@ -376,7 +376,7 @@ to regime shifts at a scale relevant to decision makers.
 
 Globally 29% of terrestrial biomes and 24% of marine realms show signals of
 resilience loss in at least one of the indicators used (Fig. \ref{fig:gpp},
-\ref{fig:mar}, \ref{fig:ter}). The overall patterns here reported agree with
+\ref{fig:mar}, S1). The overall patterns here reported agree with
 recent reports documenting ecosystems' degradation worldwide. Forests are
 becoming more vulnerable to droughts, and the combined effects with increasing
 fire frequency are exposing them to major diebacks expected by mid-century
@@ -395,7 +395,7 @@ A recent quantification of aridity thresholds shows that up to 28.6% of current
 dryland area can cross these thresholds by 2100 in the most drastic climate
 scenarios [@Berdugo:2020kk]. The results here presented confirm early warning
 signals of resilience loss in drylands as well, particularly with the fractal
-dimension, skewness and kurtosis (Fig. \ref{fig:sm-gpp}, \ref{fig:sm-ter}).
+dimension, skewness and kurtosis (Fig. S2, S3).
 
 The marine patterns presented here also align with previous studies. Deepening
 of the ocean's mixed layer can decrease light conditions near the surface,
@@ -685,70 +685,3 @@ Forum.
 
 \pagebreak
 
-
-
-
-# Supplementary Material {#sec:SM}
-
-```{=tex}
-\renewcommand\thefigure{S\arabic{figure}}
-\renewcommand\thetable{S\arabic{table}}
-\setcounter{table}{0}
-\setcounter{figure}{0}
-```
-```{=tex}
-\begin{figure*}[ht]
-\centering
-\includegraphics[width = 7in, height = 4in]{fig_detection_TER}
-\caption{\textbf{Terrestrial ecosystem respiration} Detection of resilience loss in terrestrial biomes for terrestrial ecosystem respiration. A) shows where biomes are showing symptoms of resilience loss,  B) shows the global aggregate, C) shows aggregated proportion of area per biome, while C) shows area in 0.25 degree pixels.}
-\label{fig:ter}
-\end{figure*}
-```
-```{=tex}
-\begin{figure*}[ht]
-\centering
-\includegraphics[width = 7in, height = 8in]{figS_GPP}
-\caption{\textbf{Resilience indicators in gross primary productivity} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimension (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of fig \ref{fig:gpp}. (F) is the summary with the aggregated number of signals.}
-\label{fig:sm-gpp}
-\end{figure*}
-```
-```{=tex}
-\begin{figure*}[ht]
-\centering
-\includegraphics[width = 7in, height = 8in]{figS_TER}
-\caption{\textbf{Resilience indicators in terrestrial ecosystem respiration} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimension (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of fig \ref{fig:ter}. (F) is the summary with the aggregated number of signals.}
-\label{fig:sm-ter}
-\end{figure*}
-```
-```{=tex}
-\begin{figure*}[ht]
-\centering
-\includegraphics[width = 7in, height = 8in]{figS_marine}
-\caption{\textbf{Resilience indicators in chlorophyll A} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimension (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of fig \ref{fig:mar}. (F) is the summary with the aggregated number of signals.}
-\label{fig:sm-mar}
-\end{figure*}
-```
-```{=tex}
-\begin{figure*}[ht]
-\centering
-\includegraphics[width = 6in, height = 5in]{sm_temporal_map}
-\caption{\textbf{Spatial and temporal coherence} Break points of the segmented regressions are show as maps for each dataset. The clustering in time and space of the dynamic indicators of resilience supports the idea that some areas are under similar pressures and can shift in tandem.}
-\label{fig:sm-map}
-\end{figure*}
-```
-```{=tex}
-\begin{figure*}[ht]
-\centering
-\includegraphics[width = 6in, height = 8in]{sm_temporal_clustering}
-\caption{\textbf{Temporal coherence of signals} Probability density function of the location of break points in time and space for longitude (A) and latitude (B).}
-\label{fig:sm-temp-clus}
-\end{figure*}
-```
-```{=tex}
-\begin{figure*}[ht]
-\centering
-\includegraphics[width = 5in, height = 4in]{sm_temporal_correlogram}
-\caption{\textbf{Temporal correlations} Correlations in time of resilience indicators across datasets: gross primary productivity (GPP), terrestrial ecosystem respiration (TER), and chlorophyll A (ClorA)}
-\label{fig:sm-temp-cor}
-\end{figure*}
-```

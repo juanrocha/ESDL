@@ -29,3 +29,7 @@ preprint/
 *.pages
 *.docx
 *.html
+*.dvi
+*.gz
+*.ps
+*.aux

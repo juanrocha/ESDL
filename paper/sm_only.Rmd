@@ -58,169 +58,25 @@ Correspondence to: juan.rocha@su.se
 
 **This PDF file includes:**
 
-- Materials and methods
-- Figs. S1 to S10
+- Figs. S1 to S7
 
 \pagebreak
 
 
-# Materials and methods
 
-*Data:* [Gross primary productivity](http://www.fluxcom.org), terrestrial
-ecosystem respiration (both in $gCm^{-2}d^{-1}$), and [chlorophyll-a
-concentration](https://esa-oceancolour-cci.org) ($mgm^{-3}$) were used as
-proxies of primary productivity of terrestrial and marine ecosystems
-respectively [@Jung:2019hr; @bg-13-4291-2016; @Sathyendranath:2019hs]. Although
-these data sets are freely available through the FLUXCOM initiative
-(<http://www.fluxcom.org>) or the European Space Agency Climate Change
-innitiative (<https://climate.esa.int/>), the versions of the data used here
-were harmonized by the [Earth System Data
-Lab](https://www.earthsystemdatalab.net) to weekly observations at 0.25 degree
-grid resolution, and stored as [Zarr](https://zarr.readthedocs.io/en/stable/#)
-data cubes to facilitate out of memory computations [@Mahecha:2020cl]. Gross
-primary productivity and terrestrial ecosystem respiration time series span the
-period 2001-2018 resulting in 210 771 terrestrial pixels with 817 time
-observations each, while chlorophyll A span the period 1998-2018 resulting in
-418 776 time series with 966 observations each. The Nature Conservancy
-classification of terrestrial biomes and ecosystems was used (16 biomes, 812
-ecosystems) based on [@Olson:2001ju], while marine realms (N=12) followed
-[@Spalding:2007ga] classification.
-
-*Pre-processing:* The [Earth System Data
-Lab](https://www.earthsystemdatalab.net) is hosted by the Max Planck Institute
-of Biogeochemestry and Brockmann Consult GmbH with the support of the European
-Space Agency. Their computing services were used to pre-process the data in
-their `Julia` environment. For each of the resulting time series, missing data
-was inputed with the mean seasonal cycle. A fast Fourier transform was used to
-filter the time series and remove the trend, annual cycle, and long-term
-variability. The remaining fast oscillations were log-transformed and normalized
-to zero mean and unit variance. The cleaned data was exported and further
-statistical analysis performed in `R`. A unit root test showed that a few time
-series were not stationary after the pre-processing steps described. Thus all
-time series were first-differenced to remove any remaining seasonality.
-
-*Proxies of resilience:* At this point all time series are expected to have zero
-mean and unit variance. Resilience loss is here detected by measuring critical
-slowing down or speeding up in terms of sharp increase (decrease) of variance
-measured as standard deviation, autocorrelation coefficient at lag-1; or proxies
-of flickering such as skewness, and kurtosis. Fractal dimensions were calculated
-using the madogram method [@Gneiting:2012be]. All these statistics were
-calculated in rolling windows half of the size of the time series available.
-$\Delta$ is the difference between maximum and minimum values of the resilience
-indicators, taking into account time ordering (thus allowing negative values).
-For standard deviation and autocorrelation at lag-1, a positive $\Delta$ can
-indicate critical slowing down, or speeding up if negative. The value of
-$\Delta$ however is not informative by itself. The magnitude depends on the
-pre-processing choices. Other researchers prefer a Gaussian filter, or kernel
-based methods to pre-process time series. These methods, however, require
-arbitrary choices that can optimize for detection of certain biomes while under
-estimating for others. Because the data here analyzed span about two decades,
-care should be taken to avoid bias on the resilience indicator by seasonal
-variability, annual cycles, or multidecadal oscillations. For these reasons the
-Fourier transform was an ideal filter for this study, returning zero mean and
-unit variance fast oscillations regardless whether the time series comes from a
-strong seasonal biome (e.g. boreal forest) or weak seasonality (e.g. tropical
-ones). The value of $\Delta$ varies, however, with window size, the smaller the
-rolling window, the larger $\Delta$ becomes. What matters, however, is not the
-absolute value of $\Delta$ but its position relative to the distribution for the
-planet, and in particular, relative to the biome described (due to the
-seasonality differences). $\Delta$ has a bimodal distribution (because zero
-differences are very unlikely), and outliers with respect to each biome
-distribution were reported as places showing symptoms of resilience loss.
-Outliers are here defined as places where $\Delta$ is unusually extreme, either
-above the 95% or below the 5% quantiles of $\Delta$ distribution.
-
-To check for the spatial and temporal coherence across time series, a segmented
-regression [@Muggeo:2003go] was used to identify the breaking point at which the
-early warning is detected. The segmented regression departed from a linear fit
-of the resilience proxy against time, the median of the indicator was used as
-starting value, and only one break point was calculated by default. A Davis
-tested for the significant difference in slopes before and after the breaking
-point. Since the time series are normalized, the expectation is no difference in
-variance and hence no detection of breaking points. If there is a breaking point
-and the difference is significant and large, one can expect the signal to be a
-warning of resilience loss, specially in the case where other neighboring areas
-show similar signals in space and time. The statistical detection treats each
-time series independently, but spatial and temporal coherence of the signal
-offers supporting evidence for true detection in the absence of annotated data
-or ground truth. An additional line of support can be explored by training
-models that exploit information about potential causes of abrupt changes in
-ecosystems to predict the detection (or lack) of resilience loss.
-
-*Regressions:* To further test the robustness of the results and explore what is
-driving resilience loss, a logistic regression and a random forest were fitted
-to classify pixels where at least two metrics suggested loss of resilience.
-Explanatory variables included air temperature at 2m
-(<https://cds.climate.copernicus.eu/cdsapp#!/dataset/ecv-for-climate-changee>),
-sea surface temperature [@Merchant:2019fs]
-(<https://climate.esa.int/en/projects/sea-surface-temperature>), precipitation
-(<https://gpm.nasa.gov/data>), sea surface salinity
-(<https://climate.esa.int/en/projects/ocean-colour>), burned area
-(<http://www.globalfiredata.org>), and land cover change
-(<https://cds.climate.copernicus.eu/cdsapp#!/dataset/satellite-land-cover>). For
-all variables, except land cover, the available data match the temporal
-resolution of the data used as proxy of primary productivity, but not
-necessarily time span. Thus, a Fourier transform was used to pre-process the
-data and separate the linear trend, seasonal cycle, annual cycle and fast
-oscillations. For temperature, precipitation, and salinity, their mean value,
-slope of the linear trend, and the standard deviation of the seasonal cycle,
-annual cycle and fast oscillations were used as regressors. This is with the
-intention of testing whether resilience loss is driven by variability at
-different time scales or changes in slow processes. Land cover data has a higher
-spatial resolution (300m) but lower temporal resolution (year). Proportion of
-change per land cover class between 1994 and 2018 were calculated and aggregated
-at 0.25 degree grid. Burnt area is the aggregated area burned in hectares during
-2001-2018 per pixel.
-
-For logistic regressions, the data was down sampled on the detection variable
-(at least two variables indicating resilience loss), after filtering out rock
-and ice biomes, log-transforming burnt area, performing a box-cox transformation
-on land cover change variables, and normalizing to zero mean and unit variance
-all numeric predictors. Random forest, being more tolerant to variables on their
-natural units, were fitted after filtering out rock and ice biomes and down
-sampling on detection. 75% of the data was used for training and tuning hyper
-parameters using 10-fold cross validation. All random forests were fitted with
-1000 trees. Best models were assessed against the testing data (25%) and
-variable importance computed with permutation. The best model for gross primary
-productivity targeted node size 10 and 12 variables to split at each node (N =
-31122, OOB error 0.13), 20 node size and 9 variables for terrestrial ecosystem
-respiration (N = 29546, OOB error 0.14), and 20 node size and 9 variables for
-chlorophyll A (N = 54298, OOB error 0.16).
-
-
-
+# Supplementary Material {#sec:SM}
 
 ```{=tex}
 \renewcommand\thefigure{S\arabic{figure}}
 \renewcommand\thetable{S\arabic{table}}
 \setcounter{table}{0}
 \setcounter{figure}{0}
-
-\setcounter{enumiv}{40}
-
-```
-
-
-## Method references {.unnumbered}
-
-::: {#refs}
-:::
-
-\pagebreak
-
-```{=tex}
-\begin{figure*}[ht]
-\centering
-\includegraphics[width = 7.2in, height = 3in]{figS_one_pixel_GPP}
-\caption{\textbf{Example with one pixel} Early warning signals for one pixel of the gross primary productivity dataset. A rolling window of half the length of the time series is used to calculate the dynamic indicators of resilience. $\Delta$ is the difference between maximum and minimum values, and the black points signal the break point of a segmented regression used to detect whether there are big jumps (increase or decrease) on the resilience indicators (A). (B) shows the coherence between resilience indicators across different datasets. The are labelled critical slowing down if both variance and autocorrelations increases, or speeding up if they decrease. If they contradict, they are labelled ambiguous. The same pixels can fill more than one early warning type, thus proportions can be > 1.}
-\label{fig:sm-onepxl}
-\end{figure*}
 ```
 ```{=tex}
 \begin{figure*}[ht]
 \centering
 \includegraphics[width = 7in, height = 4in]{fig_detection_TER}
-\caption{\textbf{Terrestrial ecosystem respiration} Detection of resilience loss in terrestrial biomes for terrestrial ecosystem respiration. A) shows where are biomes showing symptoms of resilience loss, B) aggregates proportion of area per biome, while C) shows area in 0.25 degree pixels.}
+\caption{\textbf{Terrestrial ecosystem respiration} Detection of resilience loss in terrestrial biomes for terrestrial ecosystem respiration. A) shows where biomes are showing symptoms of resilience loss,  B) shows the global aggregate, C) shows aggregated proportion of area per biome, while C) shows area in 0.25 degree pixels.}
 \label{fig:ter}
 \end{figure*}
 ```
@@ -228,7 +84,7 @@ chlorophyll A (N = 54298, OOB error 0.16).
 \begin{figure*}[ht]
 \centering
 \includegraphics[width = 7in, height = 8in]{figS_GPP}
-\caption{\textbf{Resilience indicators in gross primary productivity} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimanesion (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of Fig. 1. (F) is the summary with the aggregated number of signals.}
+\caption{\textbf{Resilience indicators in gross primary productivity} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimension (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of fig \ref{fig:gpp}. (F) is the summary with the aggregated number of signals.}
 \label{fig:sm-gpp}
 \end{figure*}
 ```
@@ -236,7 +92,7 @@ chlorophyll A (N = 54298, OOB error 0.16).
 \begin{figure*}[ht]
 \centering
 \includegraphics[width = 7in, height = 8in]{figS_TER}
-\caption{\textbf{Resilience indicators in terrestrial ecosystem respiration} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimanesion (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of Fig. \ref{fig:ter}. (F) is the summary with the aggregated number of signals.}
+\caption{\textbf{Resilience indicators in terrestrial ecosystem respiration} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimension (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of fig \ref{fig:ter}. (F) is the summary with the aggregated number of signals.}
 \label{fig:sm-ter}
 \end{figure*}
 ```
@@ -244,7 +100,7 @@ chlorophyll A (N = 54298, OOB error 0.16).
 \begin{figure*}[ht]
 \centering
 \includegraphics[width = 7in, height = 8in]{figS_marine}
-\caption{\textbf{Resilience indicators in chlorophyll A} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimanesion (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of Fig. 2. (F) is the summary with the aggregated number of signals.}
+\caption{\textbf{Resilience indicators in chlorophyll A} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimension (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of fig \ref{fig:mar}. (F) is the summary with the aggregated number of signals.}
 \label{fig:sm-mar}
 \end{figure*}
 ```
@@ -270,21 +126,5 @@ chlorophyll A (N = 54298, OOB error 0.16).
 \includegraphics[width = 5in, height = 4in]{sm_temporal_correlogram}
 \caption{\textbf{Temporal correlations} Correlations in time of resilience indicators across datasets: gross primary productivity (GPP), terrestrial ecosystem respiration (TER), and chlorophyll A (ClorA)}
 \label{fig:sm-temp-cor}
-\end{figure*}
-```
-```{=tex}
-\begin{figure*}[ht]
-\centering
-\includegraphics[width = 7in, height = 7in]{fig_regressions_combined}
-\caption{\textbf{Predictors of resilience loss} Logistic regressions to predict signals of resilience loss in gross primary productivity, terrestrial ecosystem respiration (A), and chlorophyll A (C). The strongest predictors of the random forest for terrestrial systems (B) and marine realms (D) were calculated with a permutation method. All random forest fitted 1000 trees. The best model for gross primary productivity targeted node size 10 and 12 variables to split at each node (N = 31122, OOB error 0.13), 20 node size and 9 variables for terrestrial ecosystem respiration (N = 29546, OOB error 0.14), and 20 node size and 9 variables for chlorophyll A (N = 54298, OOB error 0.16). }
-\label{fig:reg}
-\end{figure*}
-```
-```{=tex}
-\begin{figure*}[ht]
-\centering
-\includegraphics[width = 5in, height = 4in]{fig_countries}
-\caption{\textbf{Most affected countries} Top 10 countries by aggregated area in 0.25 degree pixels showing symptoms of resilience loss and as proportion of their territory (A). Countries ranked in (B) by the number of unique ecosystems showing symptoms of resilience loss and their proportion of territory impacted. }
-\label{fig:sm-countries}
 \end{figure*}
 ```
