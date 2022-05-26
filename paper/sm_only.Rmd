@@ -84,7 +84,7 @@ Correspondence to: juan.rocha@su.se
 \begin{figure*}[ht]
 \centering
 \includegraphics[width = 7in, height = 8in]{figS_GPP}
-\caption{\textbf{Resilience indicators in gross primary productivity} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimension (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of fig \ref{fig:gpp}. (F) is the summary with the aggregated number of signals.}
+\caption{\textbf{Resilience indicators in gross primary productivity} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimension (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of Fig 4. (F) is the summary with the aggregated number of signals.}
 \label{fig:sm-gpp}
 \end{figure*}
 ```
@@ -92,7 +92,7 @@ Correspondence to: juan.rocha@su.se
 \begin{figure*}[ht]
 \centering
 \includegraphics[width = 7in, height = 8in]{figS_TER}
-\caption{\textbf{Resilience indicators in terrestrial ecosystem respiration} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimension (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of fig \ref{fig:ter}. (F) is the summary with the aggregated number of signals.}
+\caption{\textbf{Resilience indicators in terrestrial ecosystem respiration} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimension (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of Fig \ref{fig:ter}. (F) is the summary with the aggregated number of signals.}
 \label{fig:sm-ter}
 \end{figure*}
 ```
@@ -100,7 +100,7 @@ Correspondence to: juan.rocha@su.se
 \begin{figure*}[ht]
 \centering
 \includegraphics[width = 7in, height = 8in]{figS_marine}
-\caption{\textbf{Resilience indicators in chlorophyll A} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimension (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of fig \ref{fig:mar}. (F) is the summary with the aggregated number of signals.}
+\caption{\textbf{Resilience indicators in chlorophyll A} Maps of the $\Delta$ outliers per biome are shown for standard deviation (A), autocorrelation at lag-1 (B), skewness (C), kurtosis (D), and fractal dimension (E). Insets show the distribution of $\Delta$ for each biome following the same colouring scheme of Fig 5. (F) is the summary with the aggregated number of signals.}
 \label{fig:sm-mar}
 \end{figure*}
 ```
