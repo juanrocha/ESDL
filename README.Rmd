@@ -1,0 +1,87 @@
+---
+title: "Ecosystems are showing symptoms of resilience loss"
+author: "Juan Rocha"
+date: "2026-04-01"
+output:
+  md_document:
+    variant: markdown_github
+always_allow_html: true
+---
+
+# Ecosystems are showing symptoms of resilience loss
+
+This repository contains the code for replicating the study [Ecosystems are showing symptoms of resilience loss](https://doi.org/10.1088/1748-9326/ac73a8) as well as the final results.
+The study used data from the [Earth System Data Cube](https://www.earthsystemdatalab.net/index.php) and applied early warning signals of regime shifts to variables related to primary productivity of ecosystems globally.
+The exact datasets used are described on the paper.
+But in short, they included gross primary productivity, net ecosystem respiration, leaf area index, and ocean color as response variables, while predictors included temperature, precipitation, salinity, land use, among others.
+The original data is hosted at the ESDL.
+This is a science-industry consortia that uses products from the European Space Agency and offer computational facilities to work on high dimensional cubes using `zarr`.
+So raw datasets are not stored here, they are several TB, and can be accessed from ESA or noted otherwise (links provided on the paper).
+
+## Data
+
+Data pre-processing was done at the ESDL computational facilities (hosted at the time at the Max Plank Institute of Biogeochemestry in Jena, Germany) and using mainly `Julia`.
+By pre-processing, I mean dealing with missing values, computing fast Fourier transforms, and exporting the final time series for early warnings.
+The early warning signals were computed in `R` on a laptop.
+Processed data and intermediate steps are not included in the repo.
+The main reason is size, the full repo currently contains close to 460Gb on files.
+Here is the file structure of the repo:
+
+```{r waring = FALSE, message = FALSE}
+library(fs)
+library(tidyverse)
+dir_info() |> select(path, size) |> knitr::kable()
+```
+
+All `R` and `Julia` scripts are included. The `.gitignore` is included so you can see what was left out. In summary, scripts absolutely needed for replication are numbered in ascending order, with a suggested order of execution. Scripts that starts with `99_` or not numbered were auxiliary files (e.g. to prep something for a conference talk) or things that I tried and did not work. Similarly at the end of some of my scripts you will find a section `## Leftovers` where I kept things I tried and did not work, or that work but later I found better ways to do it. All datasets used are harmonized at 0.25 degree resolution and weekly observations, but different time coverage depending on variable (see paper for details).
+
+The folders starting with `processed_` contain `.RData` files, one per latitude slice (N=720), that was the result of the computations at the ESDL. These folders are not included because each one takes 1.73GB:
+
+```{r}
+dir_info() |> select(path) |> 
+    filter(str_detect(path, "processed"), str_detect(path, "\\.R", negate = TRUE)) |> 
+    knitr::kable()
+```
+
+## Results
+
+The main results used are in the folder `Results/`. It contains intermediate results folders for the early warning signals computed, that follow the pattern: `ews_window-size_variable-used_transformed`, where window size can be half of the time series or 4yrs, variable can be gross primary productivity, terrestrial ecosystem respiration, leaf area index, or chlorophill A (their abbreviations); and sometimes I did a log transformation to reduce the influence of outliers (path ending in `_log`). Each folder contains a `csv` file per latitude slice with the results of the early warnings calculated; each folder takes between 20-40Gb of memory depending on variable. The rest of the results are mainly `*.RData` files. Intermediate results typically start with the date they were computed, followed by the type of file. 
+
+```{r}
+dir_info("Results/") |>
+    select(path, type, size) |> 
+    mutate(path = str_remove(path, "Results/")) |> 
+    knitr::kable()
+```
+
+For example, the file `201023_segmented_chlorA_log.RData` contains the results of segmented regressions for Chlorophyll-A log transformed data, computed the 23 of October 2020. Here are examples of how the files look like. The `delta` files contain the results of the $\delta$ statistic both numeric (the difference between the extremes of the early warning statistic), and as logical, if the pixel shows delta values on the extremes of the distribution of delta adjusted per biome.
+
+```{r}
+load("Results/210301_delta_detected_GPP_log.RData")
+df_delta_detected |> 
+    # only selecting one ews here ac1, but there is 5, just for nice printing
+    select(n_ews, ews_delta_ac1, value_delta_ac1, biome) 
+```
+
+Similarly, files containing `lambda` are the results of multivariate autoregressive state-space models ([MARSS](https://nwfsc-timeseries.github.io/MARSS/)) used to calculate the time varying leading eigenvalues ($\lambda$). The files with `rf` are the results from random forests, the files with `regression` are logistic regressions, and the files with `perm` are the results of the permutation tests. The files with `summary` contain the max, min and difference values needed to calculate the delta statistic for each early warning (lag-1 autocorrelation `ac1`, standard deviation `std`, skweness `skw`, kurtosis `kur`, and fractal dimension `fd`). There are also auxiliary files that are not results _per se_, for example `terrestria_biomes.RData` and `marine_biomes.RData` are biome data for visualizations, and `fire.RData` are pre-computed fire frequencies that were used as control parameter in the regressions.
+
+Please note that most of these files **are not** stored in this repository, but the scripts provided enables you to re-create them. I have only added the `delta_detected_variable_log` files which are the final results and all you need to recreate the figures of the paper. As shown above, it contains the pixel latitude, longitude coordinates, biome type, number of early warning detected, and the numeric result of the delta for each early warning as well as a logical value stating if it is on the extremes of the distribution.
+
+### Unused results
+
+There are several files of unused results under the folder `Results/archive`. The folders with small caps `results_` were computed but not used in the final analysis due to quality issues. These variables include leaf area index (LAI) and root moisture. These folders contain `csv` files of computed early warnings, one per latitute slide, each taking 42Gb of memory. Similarly, there are multiple files that follow the naming structure of the key resutls, but that were computed in 2020 or 2019 with slightly different pre-processing settings, not used in the final manuscript. The files starting with `keys_` contain the metadata with the vectors of longitude, latitudes and time for the original datasets. The folder `archive` is 168Gb of size and is not included in the repo.
+
+```{r}
+dir_info("Results/archive/") |> 
+    select(path, size) |> 
+    mutate(path = str_remove(path, "Results/archive/")) |> 
+    knitr::kable()
+```
+
+## Acknowledgements
+
+This work would have not been possible without the open data provided by Copernicus Climate Change and Atmosphere Monitoring Service, NASA, FLUXCOM initiative, and the Global fire emissions database. I would like to thank the European Space Agency and the Max Planck Institute of Biogeochemistry for an early adopter grant to use the Earth System Data Lab curated data sets and computational facilities. The paper benefited from comments from Fabian Dablander, Steven Lade, Thorsten Blenckner, Megan Meacham, Giesela Rohr and Stephen Carpenter. Stephen Carpenter also provided example code to compute the dynamic linear models for lambdas. My research was supported by Formas Grant Nos. 942-2015-731, 2020-00198 and 2019-02316, the latter through the Belmont Forum.
+
+## Archiving
+
+While not all files are archived here, there is a complete copy of this repository with the intermediate results files archived at Stockholm University. To access it please contact the archivist at the [Stockholm Resilience Centre](https://www.stockholmresilience.org) (Tobias Andersson at the time of writing). 

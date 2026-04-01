@@ -33,3 +33,6 @@ preprint/
 *.gz
 *.ps
 *.aux
+!Results/210301_delta_detected_GPP_log.RData
+!Results/210301_delta_detected_TER_log.RData
+!Results/210301_delta_detected_ChlorA_log.RData

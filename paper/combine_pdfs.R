@@ -1,7 +1,7 @@
 install.packages("qpdf")
 library(qpdf)
 
-setwd("paper/")
+setwd("~/Downloads")
 pdf_combine(
-    input = c("main_Science-template-2021.pdf", "sm_only.pdf"), 
-    output = "combined_science.pdf")
+    input = c("Biosphere integrity for people and planet.pdf", "SI_WG2_Mohamed et al..pdf"),
+    output = "Mohamed_Biosphere_integrity.pdf")
